@@ -1,43 +1,25 @@
-import copy
-import sys
-from scipy.linalg import expm
+########################################## qc_data.py ############################################
+
+### IMPORTS / DEPENDENCIES:
 
 # PennyLane:
 import pennylane as qml
 from pennylane import numpy as np
-
-from pennylane.templates import RandomLayers
-# from qiskit import quantum_info as qi
-
-# Plotting:
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-mpl.rcParams.update(mpl.rcParamsDefault)
-from tqdm import tqdm
-import csv
-
-# Data/Modeling:
-import math
-import random
-from sklearn import datasets
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
-
-from sklearn.preprocessing import OneHotEncoder
 
 # TorchVision:
 import torch
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
+# Other:
+from scipy.linalg import expm
 
-################### MNIST DATASET ######################
+
+################### MNIST DATASET CLASS ######################
 
 
 # CLASS IMPORTS ("gellmann_ops.py"):
-from .gellmann_ops import GellMannOps as gell
-
+from gellmann_ops import GellMannOps as gell
 
 class DataLPPC:
     """
@@ -52,7 +34,7 @@ class DataLPPC:
         self.active_qubits = gell_ops.active_qubits
 
     
-    # Loading MNIST Data (TensorFlow):
+    # LOADING MNIST DATA (TENSORFLOW):
     @staticmethod
     def load_mnist_tf():
         """
@@ -74,9 +56,9 @@ class DataLPPC:
         return train_images, train_labels, test_images, test_labels
 
     
-    # Loading MNIST Data (TorchVision):
+    # LOADING MNIST DATA (TORCHVISION):
     @staticmethod
-    def load_mnist_torch(batch_num, root):
+    def load_mnist_torch(batch_train, batch_test, root):
         """
         Load the MNIST dataset and return training and testing images and labels, using TorchVision.
         
@@ -95,26 +77,20 @@ class DataLPPC:
 
         # Download and Load TRAIN Data:
         trainset = datasets.MNIST(root=root, train=True, transform=transform, download=True)
-        trainloader = DataLoader(trainset, batch_size=350, shuffle=True)
+        trainloader = DataLoader(trainset, batch_size=batch_train, shuffle=True)
 
         # Download and Load TEST Data:
         testset = datasets.MNIST(root=root, train=False, transform=transform, download=True)
-        testloader = DataLoader(testset, batch_size=250, shuffle=True)
+        testloader = DataLoader(testset, batch_size=batch_test, shuffle=True)
 
         # Extract Data from Loaders:
         train_images, train_labels = next(iter(trainloader))
         test_images, test_labels = next(iter(testloader))
-
-        # Print Relevant Shapes and Types:
-        print(f"train_images shape: {train_images.shape}, dtype: {train_images.dtype}")
-        print(f"test_images shape: {test_images.shape}, dtype: {test_images.dtype}")
-        print(f"train_labels shape: {train_labels.shape}, dtype: {train_labels.dtype}")
-        print(f"test_labels shape: {test_labels.shape}, dtype: {test_labels.dtype}")
         
         return train_images, train_labels, test_images, test_labels
 
     
-    # Reducing Imported MNIST Data:
+    # REDUCING IMPORTED MNIST DATA:
     @staticmethod
     def mnist_reduce(train_images, train_labels, test_images, test_labels,
                      n_train=500, n_test=100):
@@ -142,16 +118,10 @@ class DataLPPC:
         train_labels = train_labels[train_idx]
         test_labels = test_labels[test_idx]
 
-        # Print Relevant Shapes and Types:
-        print(f"train_images shape: {train_images.shape}, dtype: {train_images.dtype}")
-        print(f"test_images shape: {test_images.shape}, dtype: {test_images.dtype}")
-        print(f"train_labels shape: {train_labels.shape}, dtype: {train_labels.dtype}")
-        print(f"test_labels shape: {test_labels.shape}, dtype: {test_labels.dtype}")
-
         return train_images, train_labels, test_images, test_labels
 
     
-    # Flattening Imported MNIST Data:
+    # FLATTENING IMPORTED MNIST DATA:
     @staticmethod
     def mnist_flatten(train_images, test_images):
         """
@@ -169,16 +139,10 @@ class DataLPPC:
         train_images = train_images.reshape(train_images.shape[0], -1)
         test_images = test_images.reshape(test_images.shape[0], -1)
 
-        # Print Relevant Shapes and Types:
-        print(f"train_images shape: {train_images.shape}, dtype: {train_images.dtype}")
-        print(f"test_images shape: {test_images.shape}, dtype: {test_images.dtype}")
-        print(f"train_labels shape: {train_labels.shape}, dtype: {train_labels.dtype}")
-        print(f"test_labels shape: {test_labels.shape}, dtype: {test_labels.dtype}")
-
         return train_images, test_images
 
     
-    # Padding Imported MNIST Data:
+    # PADDING TRAINING AND TESTING DATA:
     def mnist_padding(self, train_images, train_labels, test_images, test_labels):
         """
         Pads MNIST train and test images to the desired shape and returns the padded datasets.
@@ -192,12 +156,6 @@ class DataLPPC:
         # Pad x_train and x_test with zeros to desired shape (, 1024):
         x_train = np.pad(x_train, ((0, 0), (0, (2**self.n_qubits) - x_train.shape[1])), mode='constant')
         x_test = np.pad(x_test, ((0, 0), (0, (2**self.n_qubits) - x_test.shape[1])), mode='constant')
-
-        # Print relevant shapes and types:
-        print(f"x_train shape: {x_train.shape}, dtype: {x_train.dtype}")
-        print(f"x_test shape: {x_test.shape}, dtype: {x_test.dtype}")
-        print(f"y_train shape: {y_train.shape}, dtype: {y_train.dtype}")
-        print(f"y_test shape: {y_test.shape}, dtype: {y_test.dtype}")
 
         return x_train, y_train, x_test, y_test
 

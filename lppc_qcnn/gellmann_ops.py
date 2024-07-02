@@ -1,38 +1,21 @@
-import copy
-import sys
-from scipy.linalg import expm
+########################################## gellmann_ops.py ############################################
+
+### IMPORTS / DEPENDENCIES:
 
 # PennyLane:
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.templates import RandomLayers
-# from qiskit import quantum_info as qi
-
-# Plotting:
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-mpl.rcParams.update(mpl.rcParamsDefault)
-from tqdm import tqdm
-import csv
-
-# Data/Modeling:
-import math
-import random
-from sklearn import datasets
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
-
-from sklearn.preprocessing import OneHotEncoder
-
 # TorchVision:
 import torch
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader 
+from torch.utils.data import DataLoader
+
+# Other:
+from scipy.linalg import expm
 
 
-################### HELPER FUNCTIONS CLASSES: GELL MANN MATRICES ######################
+################### GELL MANN MATRIX OPERATION CLASS ######################
 
 
 class GellMannOps:
@@ -48,7 +31,7 @@ class GellMannOps:
         self.active_qubits = self.num_active_qubits
         self.n_qubits = self.n_qubits_mnist
 
-    # Basis Matrix:
+    # BASIS MATRIX:
     @staticmethod
     def b_mat(i, j, n):
         """
@@ -64,7 +47,7 @@ class GellMannOps:
         basis_matrix[i, j] = 1.0
         return basis_matrix
 
-    # Gell Mann Matrix:
+    # GELL-MANN MATRICES:
     def generate_gell_mann(self, order):
         """
         Generates a list of np.arrays which represent Gell Mann matrices of order 'order'.
@@ -99,7 +82,7 @@ class GellMannOps:
 
         return gm_matrices
 
-    # Convolutional Operator:
+    # CONVOLUTIONAL OPERATOR:
     @staticmethod
     def get_conv_op(mats, params):
         """
@@ -111,7 +94,7 @@ class GellMannOps:
             final += param * mat
         return expm(complex(0, -1) * final)
 
-    # Controlled Pool Operator:
+    # CONTROLLED POOL OPERATOR:
     @staticmethod
     def controlled_pool(mat):
         """
@@ -125,12 +108,16 @@ class GellMannOps:
         identity = i_hat + j_hat
         return np.kron(i_hat, identity) + np.kron(j_hat, mat)
 
-    # Custom Rotation Gate:
+    # CUSTOM ROTATION GATE:
     @staticmethod
     def G_Rot(weights, wire):
         """General Rotation Gate to Qubit."""
         qml.Rot(weights[0], weights[1], weights[2], wires=wire)
 
+
+################### PARAMETER OPERATIONS HELPER CLASS ######################
+        
+        
 class ParamOps(GellMannOps):
     """
     Class for handling parameter transformations and broadcasting, dependent on GellMannOps.
@@ -138,7 +125,7 @@ class ParamOps(GellMannOps):
     def __init__(self):
         super().__init__()
 
-    # Typecasting Parameters:
+    # TYPECASTING WEIGHTS:
     @staticmethod
     def transform_params(params):
         """
@@ -148,7 +135,7 @@ class ParamOps(GellMannOps):
         params = torch.tensor(params_complex)
         return params
 
-    # Broadcasting Parameters:
+    # BROADCASTING WEIGHTS:
     def broadcast_params(self, params):
         """
         Transforms the weights into the appropriate broadcasting form for the given number of qubits.
