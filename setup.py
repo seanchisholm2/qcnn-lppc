@@ -18,12 +18,7 @@ setup(
         "numpy",
         "pennylane",
         "matplotlib",
-        "torch",
-        "math",
-        "random",
-        "csv",
-        "tqdm",
-        "scipy"
+        "torch"
     ],
     description="PennyLane Quantum Convolutional Neural Network Package (LPPC)",
     long_description=open('README.md').read(),
