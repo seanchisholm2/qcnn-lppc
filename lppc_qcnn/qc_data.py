@@ -36,7 +36,7 @@ from torch.utils.data import DataLoader
 
 
 # CLASS IMPORTS ("gellmann_ops.py"):
-from gellmann_ops import GellMannOps as gell
+from .gellmann_ops import GellMannOps as gell
 
 
 class DataLPPC:
