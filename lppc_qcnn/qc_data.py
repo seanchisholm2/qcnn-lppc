@@ -19,7 +19,7 @@ from scipy.linalg import expm
 
 
 # CLASS IMPORTS ("gellmann_ops.py"):
-from gellmann_ops import GellMannOps as gell
+from .gellmann_ops import GellMannOps as gell_ops
 
 class DataLPPC:
     """
@@ -118,6 +118,12 @@ class DataLPPC:
         train_labels = train_labels[train_idx]
         test_labels = test_labels[test_idx]
 
+        # Convert Training and Testing Data and labels to type 'float64':
+        train_images = train_images.type(torch.float64)
+        test_images = test_images.type(torch.float64)
+        train_labels = train_labels.type(torch.float64)
+        test_labels = test_labels.type(torch.float64)
+
         return train_images, train_labels, test_images, test_labels
 
     
@@ -143,7 +149,8 @@ class DataLPPC:
 
     
     # PADDING TRAINING AND TESTING DATA:
-    def mnist_padding(self, train_images, train_labels, test_images, test_labels):
+    @staticmethod
+    def mnist_padding(train_images, train_labels, test_images, test_labels, n_qubits=10):
         """
         Pads MNIST train and test images to the desired shape and returns the padded datasets.
         """
@@ -154,8 +161,8 @@ class DataLPPC:
         y_test = np.array(test_labels)
 
         # Pad x_train and x_test with zeros to desired shape (, 1024):
-        x_train = np.pad(x_train, ((0, 0), (0, (2**self.n_qubits) - x_train.shape[1])), mode='constant')
-        x_test = np.pad(x_test, ((0, 0), (0, (2**self.n_qubits) - x_test.shape[1])), mode='constant')
+        x_train = np.pad(x_train, ((0, 0), (0, (2**n_qubits) - x_train.shape[1])), mode='constant')
+        x_test = np.pad(x_test, ((0, 0), (0, (2**n_qubits) - x_test.shape[1])), mode='constant')
 
         return x_train, y_train, x_test, y_test
 

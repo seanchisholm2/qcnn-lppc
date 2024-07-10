@@ -12,7 +12,13 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
 # Other:
+import scipy
 from scipy.linalg import expm
+
+# Plotting:
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+mpl.rcParams.update(mpl.rcParamsDefault)
 
 
 ################### GELL MANN MATRIX OPERATION CLASS ######################
@@ -30,6 +36,8 @@ class GellMannOps:
         self.num_qubits = 10
         self.active_qubits = self.num_active_qubits
         self.n_qubits = self.n_qubits_mnist
+        self.num_wires = 2 # For QCNN Drawings
+
 
     # BASIS MATRIX:
     @staticmethod
@@ -46,6 +54,7 @@ class GellMannOps:
         basis_matrix = np.zeros((n, n), dtype=np.float32)
         basis_matrix[i, j] = 1.0
         return basis_matrix
+
 
     # GELL-MANN MATRICES:
     def generate_gell_mann(self, order):
@@ -82,6 +91,7 @@ class GellMannOps:
 
         return gm_matrices
 
+
     # CONVOLUTIONAL OPERATOR:
     @staticmethod
     def get_conv_op(mats, params):
@@ -93,6 +103,7 @@ class GellMannOps:
         for mat, param in zip(mats, params):
             final += param * mat
         return expm(complex(0, -1) * final)
+
 
     # CONTROLLED POOL OPERATOR:
     @staticmethod
@@ -107,6 +118,7 @@ class GellMannOps:
         j_hat = np.array([[0.0, 0.0], [0.0, 1.0]])
         identity = i_hat + j_hat
         return np.kron(i_hat, identity) + np.kron(j_hat, mat)
+
 
     # CUSTOM ROTATION GATE:
     @staticmethod
@@ -129,18 +141,24 @@ class ParamOps(GellMannOps):
     @staticmethod
     def transform_params(params):
         """
-        Transforms the parameters to a Torch tensor of type 'complex128'.
+        Transforms the parameters to a Torch tensor of type 'complex128' with 
+        'requires_grad' set to 'True'.
         """
-        params_complex = params.astype(np.complex128)
-        params = torch.tensor(params_complex)
-        return params
+        params_complex = params.astype(np.complex128) # convert to type 'complex128'
+        params_alpha = torch.tensor(params_complex, requires_grad=True) # convert to Torch tensor
+        params = np.array(params_alpha) # Convert to Numpy array
 
-    # BROADCASTING WEIGHTS:
-    def broadcast_params(self, params):
+        return params
+    
+
+    # BROADCASTING (VERSION #1):
+    @staticmethod
+    def broadcast_params_V1(params):
         """
-        Transforms the weights into the appropriate broadcasting form for the given number of qubits.
+        Transforms the weights into the appropriate broadcasting form for the given 
+        number of qubits (FIRST version).
         """
-        n_qubits = self.n_qubits
+        n_qubits = 10
         params_flat = params.reshape(-1)
         opt_length = 2 ** n_qubits
 
@@ -148,8 +166,208 @@ class ParamOps(GellMannOps):
             params_flat = np.pad(params_flat, (0, opt_length - len(params_flat)),
                                  mode='constant', constant_values=0.0)
         
-        params = np.array(params_flat)
+        params_alpha = np.array(params_flat) # Convert to Numpy array
+
         return params
+
+
+    # BROADCASTING (VERSION #2):
+    @staticmethod
+    def broadcast_params_V2(params, pad=True):
+        """
+        Transforms the weights into the appropriate broadcasting form for the given
+        number of qubits (SECOND version).
+        """
+        n_qubits = 10
+        params_flat = params.reshape(-1)
+        opt_length = 2 ** n_qubits
+
+        # Pad Parameters with Zeros (As Needed):
+        if pad is True:
+            if len(params_flat) < opt_length:
+                params_flat = np.pad(params_flat, (0, opt_length - len(params_flat)),
+                                    mode='constant', constant_values=0.0)
+        
+        params = np.array(params_flat, requires_grad=True) # Convert to Numpy array
+
+        return params
+
+
+    # PREPARING WEIGHTS (VERSION #1): 
+    @staticmethod
+    def param_prep_V1(params, active_qubits=None, n_qubits=None,
+                      complex=False):
+        """
+        Prepares weights for passing into QCNN: Transforms the weights into the appropriate
+        broadcasting form for the given number of qubits (size of 2^{n_qubits}, pad with zeros).
+        Then transforms the parameters to a Torch tensor of type 'complex128' with 
+        'requires_grad' set to 'True' (FIRST version).
+        """
+        # Change based on number of qubits used in QC
+        #---------------------------------------
+        # Check 'active_qubits' is passed:
+        if active_qubits is None:
+            active_qubits = 10
+        
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            n_qubits = 10
+        #---------------------------------------
+        params_flat = params.reshape(-1)
+        opt_length = 2 ** n_qubits
+
+        if len(params_flat) < opt_length:
+            params_flat = np.pad(params_flat, (0, opt_length - len(params_flat)),
+                                 mode='constant', constant_values=0.0)
+        
+        # Convert to the specified dtype:
+        if complex == False:
+            params_alpha = params_flat.astype(torch.complex128)
+        else:
+            params_alpha = params_flat
+
+        # Convert to Torch tensor:
+        params = torch.tensor(params_alpha, requires_grad=True)
+
+        return params
+
+
+    # PREPARING WEIGHTS (VERSION #2):
+    @staticmethod
+    def param_prep_V2(params, active_qubits=None, n_qubits=None,
+                      dtype_key=None):
+        """
+        Prepares weights for passing into QCNN: Transforms the weights into the appropriate
+        broadcasting form for the given number of qubits (size of 2^{n_qubits}, pad with zeros).
+        Then transforms the parameters to a Torch tensor with the specified dtype and 
+        'requires_grad' set to 'True' (SECOND version).
+        
+        List of potential datatypes (THREE total):
+        -> 'complex' : Converts to 'complex128'
+        -> 'float64' : Converts to 'float64'
+        -> 'default' : No conversion, keeps original type
+        """
+        # Dictionary for dtype selection
+        dtype_dict = {
+            'complex': (np.complex128, torch.complex128),
+            'float': (np.float64, torch.float64),
+            'default': (np.int64, torch.long)
+        }
+
+        #-------------------------------------------------
+        # Check 'active_qubits' is passed:
+        if active_qubits is None:
+            active_qubits = 10 # Change as needed for QC
+        
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            n_qubits = 10 # Change as needed for QC
+        #-------------------------------------------------
+            
+        params_flat = params.reshape(-1)
+        opt_length = 2 ** n_qubits
+
+        # Pad Parameters with Zeros (As Needed):
+        if len(params_flat) < opt_length:
+            params_flat = np.pad(params_flat, (0, opt_length - len(params_flat)),
+                                mode='constant', constant_values=0.0)
+        
+        # Shape and dtype conversion:
+        #-----------------------------------------------------------------------
+        # *1* Get dtype Selection:
+        np_dtype, torch_dtype = dtype_dict.get(dtype_key)
+
+        # Convert to Specified dtype:
+        if np_dtype is not None:
+            params_alpha = params_flat.astype(np_dtype)
+        else:
+            params_alpha = params_flat.astype(dtype_dict['default'][0])
+
+        # *2* Convert to Torch tensor:
+        if torch_dtype is not None:
+            params = torch.tensor(params_alpha, dtype=torch_dtype,
+                                  requires_grad=True)
+        else:
+            params = torch.tensor(params_alpha, dtype=dtype_dict['default'][1])
+        #-----------------------------------------------------------------------
+
+        return params
+
+
+    # CIRCUIT DRAWING (VERSION #1):
+    @staticmethod
+    def draw_qcnn_V1(qc_self, qc_func, params, x,
+                     active_qubits=None, n_qubits=None, num_wires=None):
+        """
+        Draws the corresponding QCNN quantum circuit (FIRST version). Uses qml.draw_mpl().
+        """
+        #--------------------------------------------
+        # Check 'active_qubits' is passed:
+        if active_qubits is None:
+            # active_qubits = self.active_qubits
+            active_qubits = 10
+        
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            # n_qubits = self.n_qubits
+            n_qubits = 10
+
+        # Check 'num_wires' is passed:
+        if num_wires is None:
+            num_wires = 2
+        #--------------------------------------------
+        
+        # Initialize Device:
+        dev = qml.device("default.qubit", wires=num_wires)
+        
+        @qml.qnode(dev)
+        def circuit_lppc(qc_self, params):
+            qc_func(qc_self, params, x, draw=True)
+            return [qml.expval(qml.PauliZ(wire)) for wire in range(num_wires)]
+        
+        # Construct / Plot Figure:
+        fig = plt.figure(figsize=(10, 7))
+        qml.draw_mpl(circuit_lppc, expansion_strategy="device")(qc_self, params)
+
+        plt.show()
+
+
+    # CIRCUIT DRAWING (VERSION #2):
+    @staticmethod
+    def draw_qcnn_V2(qc_self, qc_func, params, x,
+                     active_qubits=None, n_qubits=None, num_wires=None, dev=False):
+        """
+        Draws the corresponding QCNN quantum circuit (SECOND version). Uses qml.draw().
+        """
+        #--------------------------------------------
+        # Check 'active_qubits' is passed:
+        if active_qubits is None:
+            # active_qubits = self.active_qubits
+            active_qubits = 10
+        
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            # n_qubits = self.n_qubits
+            n_qubits = 10
+
+        # Check 'num_wires' is passed:
+        if num_wires is None:
+            num_wires = 2
+        #--------------------------------------------
+        
+        if dev is True:
+        # Initialize Device:
+            device = qml.device("default.qubit", wires=num_wires)
+            
+            @qml.qnode(device)
+            def circuit_lppc(qc_self, params):
+                qc_func(qc_self, params, x, draw=True)
+                return [qml.expval(qml.PauliZ(wire)) for wire in range(num_wires)]
+        
+        # Construct / Plot Figure:
+        # qcnn_draw = qml.draw(circuit_lppc)
+        qc_draw = qml.draw(qc_func)
+        print(qc_draw(params, wires=range(num_wires)))
 
 
 ################### MAIN ######################
