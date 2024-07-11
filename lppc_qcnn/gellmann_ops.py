@@ -15,11 +15,6 @@ from torch.utils.data import DataLoader
 import scipy
 from scipy.linalg import expm
 
-# Plotting:
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-mpl.rcParams.update(mpl.rcParamsDefault)
-
 
 ################### GELL MANN MATRIX OPERATION CLASS ######################
 
@@ -40,8 +35,7 @@ class GellMannOps:
 
 
     # BASIS MATRIX:
-    @staticmethod
-    def b_mat(i, j, n):
+    def b_mat(self, i, j, n):
         """
         Generates an n x n matrix of 0s with the i,j th entry is a one.
         This is the i,j th basis vector on the space of n x n real matrices
@@ -74,8 +68,8 @@ class GellMannOps:
         for k in range(order):
             j = 0
             while j < k:
-                sym = self.b_mat(j, k, order) + self.b_mat(k, j, order)
-                anti_sym = complex(0.0, -1.0) * (self.b_mat(j, k, order) - self.b_mat(k, j, order))
+                sym = self.b_mat(self, j, k, order) + self.b_mat(self, k, j, order)
+                anti_sym = complex(0.0, -1.0) * (self.b_mat(self, j, k, order) - self.b_mat(self, k, j, order))
                 gm_matrices.append(sym)
                 gm_matrices.append(anti_sym)
                 j += 1
@@ -83,18 +77,17 @@ class GellMannOps:
             if k < (order - 1):
                 n = k + 1
                 coeff = np.sqrt(2 / (n * (n + 1)))
-                sum_diag = self.b_mat(0, 0, order)
+                sum_diag = self.b_mat(self, 0, 0, order)
                 for i in range(1, k + 1):
-                    sum_diag += self.b_mat(i, i, order)
-                diag_mat = coeff * (sum_diag - n * (self.b_mat(k + 1, k + 1, order)))
+                    sum_diag += self.b_mat(self, i, i, order)
+                diag_mat = coeff * (sum_diag - n * (self.b_mat(self, k + 1, k + 1, order)))
                 gm_matrices.append(diag_mat)
 
         return gm_matrices
 
 
     # CONVOLUTIONAL OPERATOR:
-    @staticmethod
-    def get_conv_op(mats, params):
+    def get_conv_op(self, mats, params):
         """
         Parametrizes the convolutional operator according to Gell-Mann matrices scaled by trainable parameters,
         this method generates the relevant applicable operator.
@@ -106,8 +99,7 @@ class GellMannOps:
 
 
     # CONTROLLED POOL OPERATOR:
-    @staticmethod
-    def controlled_pool(mat):
+    def controlled_pool(self, mat):
         """
         Generates the matrix corresponding the controlled - mat operator.
 
@@ -118,16 +110,15 @@ class GellMannOps:
         j_hat = np.array([[0.0, 0.0], [0.0, 1.0]])
         identity = i_hat + j_hat
         return np.kron(i_hat, identity) + np.kron(j_hat, mat)
+    
+
+    def G_Rot(self, params, wire):
+        """General Rotation Gate to a given Qubit."""
+        qml.Rot(params[0], params[1], params[2], wire=wire)
+        # return qml.expval(qml.PauliZ(wire))
 
 
-    # CUSTOM ROTATION GATE:
-    @staticmethod
-    def G_Rot(weights, wire):
-        """General Rotation Gate to Qubit."""
-        qml.Rot(weights[0], weights[1], weights[2], wires=wire)
-
-
-################### PARAMETER OPERATIONS HELPER CLASS ######################
+################### PARAMETER OPERATIONS CLASS ######################
         
         
 class ParamOps(GellMannOps):
@@ -136,10 +127,13 @@ class ParamOps(GellMannOps):
     """
     def __init__(self):
         super().__init__()
+        self.gell_ops = GellMannOps()
+        self.n_qubits = 10
+        self.active_qubits = 10
+        self.num_wires = 2 # For QCNN Drawings
 
-    # TYPECASTING WEIGHTS:
-    @staticmethod
-    def transform_params(params):
+    # TYPECASTING WEIGHTS FUNCTION:
+    def transform_weights(self, params):
         """
         Transforms the parameters to a Torch tensor of type 'complex128' with 
         'requires_grad' set to 'True'.
@@ -151,14 +145,19 @@ class ParamOps(GellMannOps):
         return params
     
 
-    # BROADCASTING (VERSION #1):
-    @staticmethod
-    def broadcast_params_V1(params):
+    # BROADCASTING WEIGHTS FUNCTION (VERSION #1):
+    def broadcast_weights_V1(self, params, n_qubits=None):
         """
         Transforms the weights into the appropriate broadcasting form for the given 
-        number of qubits (FIRST version).
+        number of qubits (VERSION #1).
         """
-        n_qubits = 10
+        # QUBIT CHECK:
+        #---------------------------------------
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            n_qubits = 10
+        #---------------------------------------
+            
         params_flat = params.reshape(-1)
         opt_length = 2 ** n_qubits
 
@@ -171,12 +170,11 @@ class ParamOps(GellMannOps):
         return params
 
 
-    # BROADCASTING (VERSION #2):
-    @staticmethod
-    def broadcast_params_V2(params, pad=True):
+    # BROADCASTING WEIGHTS FUNCTION (VERSION #2; CURRENT VERSION):
+    def broadcast_weights_V2(self, params, pad=True):
         """
         Transforms the weights into the appropriate broadcasting form for the given
-        number of qubits (SECOND version).
+        number of qubits (VERSION #2).
         """
         n_qubits = 10
         params_flat = params.reshape(-1)
@@ -193,17 +191,16 @@ class ParamOps(GellMannOps):
         return params
 
 
-    # PREPARING WEIGHTS (VERSION #1): 
-    @staticmethod
-    def param_prep_V1(params, active_qubits=None, n_qubits=None,
+    # PREPARING WEIGHTS FUNCTION (VERSION #1): 
+    def prep_weights_V1(self, params, active_qubits=None, n_qubits=None,
                       complex=False):
         """
         Prepares weights for passing into QCNN: Transforms the weights into the appropriate
         broadcasting form for the given number of qubits (size of 2^{n_qubits}, pad with zeros).
         Then transforms the parameters to a Torch tensor of type 'complex128' with 
-        'requires_grad' set to 'True' (FIRST version).
+        'requires_grad' set to 'True' (VERSION #1).
         """
-        # Change based on number of qubits used in QC
+        # ACTIVE QUBIT CHECK:
         #---------------------------------------
         # Check 'active_qubits' is passed:
         if active_qubits is None:
@@ -213,6 +210,7 @@ class ParamOps(GellMannOps):
         if n_qubits is None:
             n_qubits = 10
         #---------------------------------------
+
         params_flat = params.reshape(-1)
         opt_length = 2 ** n_qubits
 
@@ -232,15 +230,14 @@ class ParamOps(GellMannOps):
         return params
 
 
-    # PREPARING WEIGHTS (VERSION #2):
-    @staticmethod
-    def param_prep_V2(params, active_qubits=None, n_qubits=None,
+    # PREPARING WEIGHTS FUNCTION (VERSION #2; CURRENT VERSION):
+    def prep_weights_V2(self, params, active_qubits=None, n_qubits=None,
                       dtype_key=None):
         """
         Prepares weights for passing into QCNN: Transforms the weights into the appropriate
         broadcasting form for the given number of qubits (size of 2^{n_qubits}, pad with zeros).
         Then transforms the parameters to a Torch tensor with the specified dtype and 
-        'requires_grad' set to 'True' (SECOND version).
+        'requires_grad' set to 'True' (VERSION #2).
         
         List of potential datatypes (THREE total):
         -> 'complex' : Converts to 'complex128'
@@ -254,15 +251,17 @@ class ParamOps(GellMannOps):
             'default': (np.int64, torch.long)
         }
 
-        #-------------------------------------------------
+        #----------------------------------------------------
         # Check 'active_qubits' is passed:
         if active_qubits is None:
+            # active_qubits = self.active_qubits
             active_qubits = 10 # Change as needed for QC
         
         # Check 'n_qubits' is passed:
         if n_qubits is None:
+            # n_qubits = self.n_qubits
             n_qubits = 10 # Change as needed for QC
-        #-------------------------------------------------
+        #----------------------------------------------------
             
         params_flat = params.reshape(-1)
         opt_length = 2 ** n_qubits
@@ -272,7 +271,7 @@ class ParamOps(GellMannOps):
             params_flat = np.pad(params_flat, (0, opt_length - len(params_flat)),
                                 mode='constant', constant_values=0.0)
         
-        # Shape and dtype conversion:
+        # SHAPE AND DTYPE CONVERSION:
         #-----------------------------------------------------------------------
         # *1* Get dtype Selection:
         np_dtype, torch_dtype = dtype_dict.get(dtype_key)
@@ -292,82 +291,28 @@ class ParamOps(GellMannOps):
         #-----------------------------------------------------------------------
 
         return params
+    
 
+    # ******* UPDATED WEIGHTS TRANSFORMATION VERSION(S) *******
 
-    # CIRCUIT DRAWING (VERSION #1):
-    @staticmethod
-    def draw_qcnn_V1(qc_self, qc_func, params, x,
-                     active_qubits=None, n_qubits=None, num_wires=None):
+    # UPDATED BROADCASTING WEIGHTS FUNCTION:
+    def broadcast_weights_lppc(self, *args, **kwargs):
         """
-        Draws the corresponding QCNN quantum circuit (FIRST version). Uses qml.draw_mpl().
+        Returns the most recent version of the BROADCASTING WEIGHTS function used in the 
+        QCNN (CURRENT VERSION: V2).
         """
-        #--------------------------------------------
-        # Check 'active_qubits' is passed:
-        if active_qubits is None:
-            # active_qubits = self.active_qubits
-            active_qubits = 10
-        
-        # Check 'n_qubits' is passed:
-        if n_qubits is None:
-            # n_qubits = self.n_qubits
-            n_qubits = 10
+        # Return Current Pool Layer ('pool_layer_V3') with appropriate arguments:
+        return self.broadcast_weights_V2(self, *args, **kwargs)
 
-        # Check 'num_wires' is passed:
-        if num_wires is None:
-            num_wires = 2
-        #--------------------------------------------
-        
-        # Initialize Device:
-        dev = qml.device("default.qubit", wires=num_wires)
-        
-        @qml.qnode(dev)
-        def circuit_lppc(qc_self, params):
-            qc_func(qc_self, params, x, draw=True)
-            return [qml.expval(qml.PauliZ(wire)) for wire in range(num_wires)]
-        
-        # Construct / Plot Figure:
-        fig = plt.figure(figsize=(10, 7))
-        qml.draw_mpl(circuit_lppc, expansion_strategy="device")(qc_self, params)
-
-        plt.show()
-
-
-    # CIRCUIT DRAWING (VERSION #2):
-    @staticmethod
-    def draw_qcnn_V2(qc_self, qc_func, params, x,
-                     active_qubits=None, n_qubits=None, num_wires=None, dev=False):
+    
+    # UPDATED PREPARING WEIGHTS FUNCTION:
+    def prep_weights_lppc(self, *args, **kwargs):
         """
-        Draws the corresponding QCNN quantum circuit (SECOND version). Uses qml.draw().
+        Returns the most recent version of the PREPARING WEIGHTS function used in the
+        QCNN (CURRENT VERSION: V2).
         """
-        #--------------------------------------------
-        # Check 'active_qubits' is passed:
-        if active_qubits is None:
-            # active_qubits = self.active_qubits
-            active_qubits = 10
-        
-        # Check 'n_qubits' is passed:
-        if n_qubits is None:
-            # n_qubits = self.n_qubits
-            n_qubits = 10
-
-        # Check 'num_wires' is passed:
-        if num_wires is None:
-            num_wires = 2
-        #--------------------------------------------
-        
-        if dev is True:
-        # Initialize Device:
-            device = qml.device("default.qubit", wires=num_wires)
-            
-            @qml.qnode(device)
-            def circuit_lppc(qc_self, params):
-                qc_func(qc_self, params, x, draw=True)
-                return [qml.expval(qml.PauliZ(wire)) for wire in range(num_wires)]
-        
-        # Construct / Plot Figure:
-        # qcnn_draw = qml.draw(circuit_lppc)
-        qc_draw = qml.draw(qc_func)
-        print(qc_draw(params, wires=range(num_wires)))
+        # Return Current FC Layer ('fully_connected_layer_V2') with appropriate arguments:
+        return self.prep_weights_V2(self, *args, **kwargs)
 
 
 ################### MAIN ######################

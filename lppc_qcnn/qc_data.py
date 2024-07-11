@@ -26,51 +26,36 @@ class DataLPPC:
     Class for loading and processing MNIST data for quantum convolutional neural networks.
     """
     def __init__(self):
-        # Initialize GellMannOps to access its variables
-        gell_ops = gell()
+        self.gell_ops = gell_ops() # Initialize GellMannOps to access its variables
         self.n_qubits = gell_ops.n_qubits
         self.num_active_qubits = gell_ops.num_active_qubits
         self.num_qubits = gell_ops.num_qubits
         self.active_qubits = gell_ops.active_qubits
 
     
-    # LOADING MNIST DATA (TENSORFLOW):
+    # LOADING MNIST DATA FUNCTION (TENSORFLOW):
     @staticmethod
     def load_mnist_tf():
         """
-        Load the MNIST dataset and return training and testing images and labels, using TensorFlow.
-        
-        Returns:
-            train_images (numpy.ndarray): Training images.
-            train_labels (numpy.ndarray): Training labels.
-            test_images (numpy.ndarray): Testing images.
-            test_labels (numpy.ndarray): Testing labels.
+        Loads the MNIST dataset and returns training and testing images and 
+        labels, using TensorFlow.
         """
         # Load MNIST dataset using TensorFlow:
         (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
         
-        # *NOTE*: This function uses TensorFlow to import the MNIST dataset, which is 
+        # *Note*: This function uses TensorFlow to import the MNIST dataset, which is 
         # currently not utilized within the QCCN example notebook. Instead, our 
         # notebook imported the MNIST dataset using TorchVision.
         
         return train_images, train_labels, test_images, test_labels
 
     
-    # LOADING MNIST DATA (TORCHVISION):
+    # LOADING MNIST DATA FUNCTION (TORCHVISION):
     @staticmethod
     def load_mnist_torch(batch_train, batch_test, root):
         """
-        Load the MNIST dataset and return training and testing images and labels, using TorchVision.
-        
-        Args:
-            batch_num (int): Number of samples per batch to load.
-            root (str): Root directory where data will be stored.
-
-        Returns:
-            train_images (torch.Tensor): Training images.
-            train_labels (torch.Tensor): Training labels.
-            test_images (torch.Tensor): Testing images.
-            test_labels (torch.Tensor): Testing labels.
+        Loads the MNIST dataset and returns training and testing images and 
+        labels, using TorchVision.
         """
         # Define Tensor Transform:
         transform = transforms.Compose([transforms.ToTensor()])
@@ -90,13 +75,13 @@ class DataLPPC:
         return train_images, train_labels, test_images, test_labels
 
     
-    # REDUCING IMPORTED MNIST DATA:
+    # REDUCING IMPORTED MNIST DATA FUNCTION:
     @staticmethod
     def mnist_reduce(train_images, train_labels, test_images, test_labels,
                      n_train=500, n_test=100):
         """
-        Reduces the dataset size and convert it from multi-classification to binary classification 
-        (classes 0 and 1).
+        Reduces the dataset size and converts it from multi-classification to binary 
+        classification (classes: 0, 1).
         """
         ############# Multi-Classification -> Binary Classification ################
         # Select Indices for Classes 0 and 1:
@@ -127,19 +112,11 @@ class DataLPPC:
         return train_images, train_labels, test_images, test_labels
 
     
-    # FLATTENING IMPORTED MNIST DATA:
+    # FLATTENING IMPORTED MNIST DATA FUNCTION:
     @staticmethod
     def mnist_flatten(train_images, test_images):
         """
-        Flatten the MNIST images.
-        
-        Args:
-            train_images (torch.Tensor): Training images.
-            test_images (torch.Tensor): Testing images.
-            
-        Returns:
-            train_images (torch.Tensor): Flattened training images.
-            test_images (torch.Tensor): Flattened testing images.
+        Flattens the MNIST images.
         """
         # Flatten images:
         train_images = train_images.reshape(train_images.shape[0], -1)
@@ -148,7 +125,7 @@ class DataLPPC:
         return train_images, test_images
 
     
-    # PADDING TRAINING AND TESTING DATA:
+    # PADDING TRAINING AND TESTING DATA FUNCTION:
     @staticmethod
     def mnist_padding(train_images, train_labels, test_images, test_labels, n_qubits=10):
         """
