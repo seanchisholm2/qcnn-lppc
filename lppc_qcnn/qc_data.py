@@ -11,8 +11,9 @@ import torch
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
-# Other:
-from scipy.linalg import expm
+# TensorFlow:
+# import tensorflow as tf  # NOT ACCESSED
+# from tensorflow.keras.datasets import mnist  # NOT ACCESSED
 
 
 ################### MNIST DATASET CLASS ######################
@@ -31,7 +32,6 @@ class DataLPPC:
         self.num_active_qubits = gell_ops.num_active_qubits
         self.num_qubits = gell_ops.num_qubits
         self.active_qubits = gell_ops.active_qubits
-
     
     # LOADING MNIST DATA FUNCTION (TENSORFLOW):
     @staticmethod
@@ -77,12 +77,15 @@ class DataLPPC:
     
     # REDUCING IMPORTED MNIST DATA FUNCTION:
     @staticmethod
-    def mnist_reduce(train_images, train_labels, test_images, test_labels,
-                     n_train=500, n_test=100):
+    def mnist_reduce(train_images, train_labels, test_images, test_labels):
         """
         Reduces the dataset size and converts it from multi-classification to binary 
-        classification (classes: 0, 1).
+        classification (Note: available class selections are: 0, 1; include 'n_train' and
+        'n_test' in arguments as needed).
         """
+        # n_train = 500 # Sample TRAIN Batch Size
+        # n_test = 100 # Sample TEST Batch Size
+
         ############# Multi-Classification -> Binary Classification ################
         # Select Indices for Classes 0 and 1:
         train_idx = np.append(np.where(train_labels.numpy() == 0)[0],
@@ -91,7 +94,7 @@ class DataLPPC:
         test_idx = np.append(np.where(test_labels.numpy() == 0)[0],
                          np.where(test_labels.numpy() == 1)[0]) # <- In 'test_labels'
 
-        # Convert indices to PyTorch Tensors:
+        # Convert Indices to PyTorch Tensors:
         train_idx = torch.tensor(train_idx, dtype=torch.long)
         test_idx = torch.tensor(test_idx, dtype=torch.long)
 
@@ -118,7 +121,7 @@ class DataLPPC:
         """
         Flattens the MNIST images.
         """
-        # Flatten images:
+        # Flatten Images:
         train_images = train_images.reshape(train_images.shape[0], -1)
         test_images = test_images.reshape(test_images.shape[0], -1)
 
@@ -127,24 +130,54 @@ class DataLPPC:
     
     # PADDING TRAINING AND TESTING DATA FUNCTION:
     @staticmethod
-    def mnist_padding(train_images, train_labels, test_images, test_labels, n_qubits=10):
+    def mnist_padding(train_images, train_labels, test_images, test_labels,
+                      n_qubits=None):
         """
         Pads MNIST train and test images to the desired shape and returns the padded datasets.
         """
+        # QUBIT CHECK:
+        #-------------------------------------
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            # n_qubits = self.n_qubits
+            # n_qubits = 10
+            n_qubits = 2 # FOR TESTING
+        #-------------------------------------
+
+        # Convert Data to Numpy Arrays:
         x_train = np.array(train_images)
         x_test = np.array(test_images)
 
+        # Convert Labels to Numpy Arrays:
         y_train = np.array(train_labels)
         y_test = np.array(test_labels)
 
-        # Pad x_train and x_test with zeros to desired shape (, 1024):
+        # Pad 'x_train' and 'x_test' with zeros to desired shape (, (2**n_qubits)):
         x_train = np.pad(x_train, ((0, 0), (0, (2**n_qubits) - x_train.shape[1])), mode='constant')
         x_test = np.pad(x_test, ((0, 0), (0, (2**n_qubits) - x_test.shape[1])), mode='constant')
 
         return x_train, y_train, x_test, y_test
+    
+
+    # ******* UPDATED DATA VERSION(S) *******
+
+
+    # UPDATED LOAD MNIST FUNCTION:
+    @staticmethod
+    def load_mnist_lppc(*args, **kwargs):
+        """
+        Returns the most recent version of the LOAD MNIST function used in the 
+        QCNN (CURRENT VERSION: TORCH).
+        """
+        # Define Class:
+        lppc_data = DataLPPC()
+
+        # Return Current Load MNIST ('load_mnist_torch') with appropriate arguments:
+        return lppc_data.load_mnist_torch(*args, **kwargs)
 
 
 ################### MAIN ######################
+
 
 def main():
     return

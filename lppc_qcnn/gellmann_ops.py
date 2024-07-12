@@ -8,11 +8,15 @@ from pennylane import numpy as np
 
 # TorchVision:
 import torch
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+# from torchvision import datasets, transforms  # NOT ACCESSED
+# from torch.utils.data import DataLoader  # NOT ACCESSED
+
+# TensorFlow:
+# import tensorflow as tf  # NOT ACCESSED
+# from tensorflow.keras.datasets import mnist  # NOT ACCESSED
 
 # Other:
-import scipy
+# import scipy
 from scipy.linalg import expm
 
 
@@ -24,28 +28,33 @@ class GellMannOps:
     Class for generating Gell-Mann matrices and related operations.
     """
     def __init__(self):
+        # QUBITS:
         self.n_qubits_mnist = 10
         self.n_qubits_lppc = 4
         self.n_qubits_test = 2
-        self.num_active_qubits = 10
-        self.num_qubits = 10
-        self.active_qubits = self.num_active_qubits
-        self.n_qubits = self.n_qubits_mnist
+        self.n_qubits = self.n_qubits_test
+        # ACTIVE QUBITS:
+        self.active_qubits_mnist = 10
+        self.active_qubits_test = 2
+        # self.active_qubits = self.active_qubits_mnist # SET ACTIVE QUBITS TO _MNIST_ VALUE
+        self.active_qubits = self.active_qubits_test # SET ACTIVE QUBITS TO _TEST_ VALUE
+        self.n_qubits = self.n_qubits_test
+        # WIRES:
         self.num_wires = 2 # For QCNN Drawings
-
 
     # BASIS MATRIX:
     def b_mat(self, i, j, n):
         """
         Generates an n x n matrix of 0s with the i,j th entry is a one.
-        This is the i,j th basis vector on the space of n x n real matrices
+        This is the i,j th basis vector on the space of n x n real matrices.
+        Returns np.array of floats, shape (n,n).
 
-        :param i: int, row index (must be < n)
-        :param j: int, column index (must be < n)
-        :param n: int, dimension of the matrices
-        :return: np.array of floats, shape (n,n)
+        List of Parameters:
+        -> param 'i': int, row index (must be < n)
+        -> param 'j': int, column index (must be < n)
+        -> param 'n': int, dimension of the matrices
         """
-        basis_matrix = np.zeros((n, n), dtype=np.float32)
+        basis_matrix = np.zeros((n, n), dtype=np.float64) # ORIGINAL: dtype=np.float32
         basis_matrix[i, j] = 1.0
         return basis_matrix
 
@@ -54,15 +63,15 @@ class GellMannOps:
     def generate_gell_mann(self, order):
         """
         Generates a list of np.arrays which represent Gell Mann matrices of order 'order'.
-        eg: order = 2
-        gm_matrices = [ [[0,  1],
-                                 [1,  0]] ,
+        Example: 'order' = 2
+         -> gm_matrices = [ [[0,  1],
+                                    [1,  0]] ,
 
-                                [[0, -i]
-                                 [i,  0]] ,
+                                    [[0, -i]
+                                    [i,  0]] ,
 
-                                [[1,  0],
-                                 [0, -1]] ]
+                                    [[1,  0],
+                                    [0, -1]] ]
         """
         gm_matrices = []
         for k in range(order):
@@ -89,8 +98,8 @@ class GellMannOps:
     # CONVOLUTIONAL OPERATOR:
     def get_conv_op(self, mats, params):
         """
-        Parametrizes the convolutional operator according to Gell-Mann matrices scaled by trainable parameters,
-        this method generates the relevant applicable operator.
+        Parametrizes the convolutional operator according to Gell-Mann matrices scaled by 
+        trainable parameters, this method generates the relevant applicable operator.
         """
         final = np.zeros(mats[0].shape, dtype=np.complex128)
         for mat, param in zip(mats, params):
@@ -101,10 +110,8 @@ class GellMannOps:
     # CONTROLLED POOL OPERATOR:
     def controlled_pool(self, mat):
         """
-        Generates the matrix corresponding the controlled - mat operator.
-
-        :param mat: np.array, shape (2x2) for the controlled operator
-        :return: np.array, the final controlled-mat operator
+        Generates the matrix corresponding the controlled - mat operator. Inputs Numpy array,
+        shape (2x2) for the controlled operator and returns the final controlled-mat operator.
         """
         i_hat = np.array([[1.0, 0.0], [0.0, 0.0]])
         j_hat = np.array([[0.0, 0.0], [0.0, 1.0]])
@@ -112,6 +119,7 @@ class GellMannOps:
         return np.kron(i_hat, identity) + np.kron(j_hat, mat)
     
 
+    # GENERAL ROTATION OPERATOR:
     def G_Rot(self, params, wire):
         """General Rotation Gate to a given Qubit."""
         qml.Rot(params[0], params[1], params[2], wire=wire)
@@ -128,8 +136,12 @@ class ParamOps(GellMannOps):
     def __init__(self):
         super().__init__()
         self.gell_ops = GellMannOps()
-        self.n_qubits = 10
-        self.active_qubits = 10
+        # MNIST DATAL:
+        # self.n_qubits = 10
+        # self.active_qubits = 10
+        # TEST:
+        self.n_qubits = 2
+        self.active_qubits = 2
         self.num_wires = 2 # For QCNN Drawings
 
     # TYPECASTING WEIGHTS FUNCTION:
@@ -152,14 +164,16 @@ class ParamOps(GellMannOps):
         number of qubits (VERSION #1).
         """
         # QUBIT CHECK:
-        #---------------------------------------
+        #-------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            n_qubits = 10
+            # n_qubits = self.n_qubits
+            # n_qubits = 10
+            n_qubits = 2 # FOR TESTING
         #---------------------------------------
             
         params_flat = params.reshape(-1)
-        opt_length = 2 ** n_qubits
+        opt_length = (2**n_qubits)
 
         if len(params_flat) < opt_length:
             params_flat = np.pad(params_flat, (0, opt_length - len(params_flat)),
@@ -171,14 +185,22 @@ class ParamOps(GellMannOps):
 
 
     # BROADCASTING WEIGHTS FUNCTION (VERSION #2; CURRENT VERSION):
-    def broadcast_weights_V2(self, params, pad=True):
+    def broadcast_weights_V2(self, params, n_qubits=None, pad=True):
         """
         Transforms the weights into the appropriate broadcasting form for the given
-        number of qubits (VERSION #2).
+        number of qubits, and includes an optional padding feature (VERSION #2).
         """
-        n_qubits = 10
+        # QUBIT CHECK:
+        #-------------------------------------
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            # n_qubits = self.n_qubits
+            # n_qubits = 10
+            n_qubits = 2 # FOR TESTING
+        #-------------------------------------
+            
         params_flat = params.reshape(-1)
-        opt_length = 2 ** n_qubits
+        opt_length = (2**n_qubits)
 
         # Pad Parameters with Zeros (As Needed):
         if pad is True:
@@ -189,10 +211,33 @@ class ParamOps(GellMannOps):
         params = np.array(params_flat, requires_grad=True) # Convert to Numpy array
 
         return params
+    
+
+    # BROADCASTING WEIGHTS FUNCTION (VERSION #3; CURRENT VERSION):
+    def broadcast_weights_V3(self, params,
+                             n_qubits=None):
+        """
+        Transforms the weights into the appropriate broadcasting form for the given
+        number of qubits (VERSION #3; CURRENT VERSION).
+        """
+        # QUBIT CHECK:
+        #-------------------------------------
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            # n_qubits = self.n_qubits
+            # n_qubits = 10
+            n_qubits = 2 # FOR TESTING
+        #-------------------------------------
+            
+        params_flat = params.reshape(-1)
+        # params = np.array(params, requires_grad=True)
+        params = np.array(params_flat, requires_grad=True) # Convert to Numpy array
+
+        return params
 
 
     # PREPARING WEIGHTS FUNCTION (VERSION #1): 
-    def prep_weights_V1(self, params, active_qubits=None, n_qubits=None,
+    def prep_weights_V1(self, params, n_qubits=None,
                       complex=False):
         """
         Prepares weights for passing into QCNN: Transforms the weights into the appropriate
@@ -200,19 +245,17 @@ class ParamOps(GellMannOps):
         Then transforms the parameters to a Torch tensor of type 'complex128' with 
         'requires_grad' set to 'True' (VERSION #1).
         """
-        # ACTIVE QUBIT CHECK:
-        #---------------------------------------
-        # Check 'active_qubits' is passed:
-        if active_qubits is None:
-            active_qubits = 10
-        
+        # QUBIT CHECK:
+        #-------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            n_qubits = 10
-        #---------------------------------------
+            # n_qubits = self.n_qubits
+            # n_qubits = 10
+            n_qubits = 2 # FOR TESTING
+        #-------------------------------------
 
         params_flat = params.reshape(-1)
-        opt_length = 2 ** n_qubits
+        opt_length = (2**n_qubits)
 
         if len(params_flat) < opt_length:
             params_flat = np.pad(params_flat, (0, opt_length - len(params_flat)),
@@ -231,7 +274,7 @@ class ParamOps(GellMannOps):
 
 
     # PREPARING WEIGHTS FUNCTION (VERSION #2; CURRENT VERSION):
-    def prep_weights_V2(self, params, active_qubits=None, n_qubits=None,
+    def prep_weights_V2(self, params, n_qubits=None,
                       dtype_key=None):
         """
         Prepares weights for passing into QCNN: Transforms the weights into the appropriate
@@ -239,11 +282,20 @@ class ParamOps(GellMannOps):
         Then transforms the parameters to a Torch tensor with the specified dtype and 
         'requires_grad' set to 'True' (VERSION #2).
         
-        List of potential datatypes (THREE total):
+        List of Available Datatypes (THREE total):
         -> 'complex' : Converts to 'complex128'
-        -> 'float64' : Converts to 'float64'
+        -> 'float' : Converts to 'float64'
         -> 'default' : No conversion, keeps original type
         """
+        # QUBIT CHECK:
+        #-------------------------------------
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            # n_qubits = self.n_qubits
+            # n_qubits = 10
+            n_qubits = 2 # FOR TESTING
+        #-------------------------------------
+
         # Dictionary for dtype selection
         dtype_dict = {
             'complex': (np.complex128, torch.complex128),
@@ -251,20 +303,8 @@ class ParamOps(GellMannOps):
             'default': (np.int64, torch.long)
         }
 
-        #----------------------------------------------------
-        # Check 'active_qubits' is passed:
-        if active_qubits is None:
-            # active_qubits = self.active_qubits
-            active_qubits = 10 # Change as needed for QC
-        
-        # Check 'n_qubits' is passed:
-        if n_qubits is None:
-            # n_qubits = self.n_qubits
-            n_qubits = 10 # Change as needed for QC
-        #----------------------------------------------------
-            
         params_flat = params.reshape(-1)
-        opt_length = 2 ** n_qubits
+        opt_length = (2**n_qubits)
 
         # Pad Parameters with Zeros (As Needed):
         if len(params_flat) < opt_length:
@@ -295,27 +335,39 @@ class ParamOps(GellMannOps):
 
     # ******* UPDATED WEIGHTS TRANSFORMATION VERSION(S) *******
 
+
+    # UPDATED TRANSFORMING WEIGHTS FUNCTION:
+    def transform_weights_lppc(self, *args, **kwargs):
+        """
+        Returns the most recent version of the TRANSFORMING WEIGHTS function 
+        used in the QCNN.
+        """
+        # Return Current Transform Weights ('transform_weights') with appropriate arguments:
+        return self.transform_weights(self, *args, **kwargs)
+
+
     # UPDATED BROADCASTING WEIGHTS FUNCTION:
     def broadcast_weights_lppc(self, *args, **kwargs):
         """
-        Returns the most recent version of the BROADCASTING WEIGHTS function used in the 
-        QCNN (CURRENT VERSION: V2).
+        Returns the most recent version of the BROADCASTING WEIGHTS function 
+        used in the QCNN (CURRENT VERSION: V3).
         """
-        # Return Current Pool Layer ('pool_layer_V3') with appropriate arguments:
-        return self.broadcast_weights_V2(self, *args, **kwargs)
+        # Return Current Broadcast Weights ('broadcast_weights_V3') with appropriate arguments:
+        return self.broadcast_weights_V3(self, *args, **kwargs)
 
     
     # UPDATED PREPARING WEIGHTS FUNCTION:
     def prep_weights_lppc(self, *args, **kwargs):
         """
-        Returns the most recent version of the PREPARING WEIGHTS function used in the
-        QCNN (CURRENT VERSION: V2).
+        Returns the most recent version of the PREPARING WEIGHTS function 
+        used in the QCNN (CURRENT VERSION: V2).
         """
-        # Return Current FC Layer ('fully_connected_layer_V2') with appropriate arguments:
+        # Return Current Prepare Weights ('prep_weights_V2') with appropriate arguments:
         return self.prep_weights_V2(self, *args, **kwargs)
 
 
 ################### MAIN ######################
+
 
 def main():
     return
