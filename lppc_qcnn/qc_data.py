@@ -33,6 +33,16 @@ class DataLPPC:
         self.active_qubits = 6 # -> Test Config #3 (6 Qubits)
         # WIRES:
         self.num_wires = 2 # For QCNN Drawings
+
+    # SAMPLE DATA FUNCTION:
+    @staticmethod
+    def mnist_flatten():
+        """
+        Generates sample data for QCNN.
+        """
+        # TODO
+
+        return
     
     # LOADING MNIST DATA FUNCTION (TENSORFLOW):
     @staticmethod
