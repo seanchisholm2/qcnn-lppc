@@ -15,8 +15,8 @@ import torch
 # import tensorflow as tf  # NOT ACCESSED
 # from tensorflow.keras.datasets import mnist  # NOT ACCESSED
 
-# Other:
-# import scipy
+# OTHER
+# *1* Scipy:
 from scipy.linalg import expm
 
 
@@ -27,20 +27,69 @@ class GellMannOps:
     """
     Class for generating Gell-Mann matrices and related operations.
     """
+    # (Note: Modify 'qubit_config=' line to change qubit configuration across QCNN)
     def __init__(self):
-        # QUBITS:
-        self.n_qubits_mnist = 10
-        self.n_qubits_lppc = 4
-        self.n_qubits_test = 2
-        self.n_qubits = self.n_qubits_test
-        # ACTIVE QUBITS:
-        self.active_qubits_mnist = 10
-        self.active_qubits_test = 2
-        # self.active_qubits = self.active_qubits_mnist # SET ACTIVE QUBITS TO _MNIST_ VALUE
-        self.active_qubits = self.active_qubits_test # SET ACTIVE QUBITS TO _TEST_ VALUE
-        self.n_qubits = self.n_qubits_test
+        # QUBITS (ONLY):
+        self.n_qubits = self.qubit_select(self, qubit_config="mnist")
+        # ACTIVE QUBITS (ONLY):
+        self.active_qubits = self.qubit_select(self, qubit_config="mnist")
         # WIRES:
         self.num_wires = 2 # For QCNN Drawings
+
+
+    # QUBIT AND ACTIVE QUBIT NUMBER SELECTION:
+    def qubit_select(self, qubit_config=None, qubit_list=False):
+        """
+        Selects the number of qubits and active qubits used in QCNN based on string value passed
+        for 'qubit_config'. Lists all available selections for number of qubits and active qubits when
+        setting 'qubit_list=True' (Note: setting 'qubit_list=True' returns null values).
+
+        Available Qubit Configurations:
+        qubit_options = {
+            "test + Integer": "'Integer' Number of Qubits/Active Qubits
+            "lppc": 4 Qubits/Active Qubits (same as "test2")
+            "mnist": 10 Qubits/Active Qubits
+            "nullconfig": No Qubits/Active Qubits Defined (Not Defaulted)
+        }
+        """
+        # List of Available Qubit Configurations (THREE total):
+        # (Note: rename )
+        qubit_options = {
+            "test2": (2, 2),
+            "test4": (4, 4),
+            "test6": (6, 6),
+            "test8": (8, 8),
+            "test3": (3, 3),
+            "test9": (9, 9),
+            "test12": (12, 12),
+            "lppc": (4, 4), # SAME AS "test2"
+            "mnist": (10, 10),
+            "nullconfig": (None, None) # NULL QUBITS (as needed)
+        }
+        
+        # Check Qubit Configuration Type:
+        if not isinstance(qubit_config, str) and qubit_config is not None:
+            raise TypeError("qubit_config must be a string. Set 'qubit_list=True' to view available options.")
+        
+        # List Available Configurations:
+        if qubit_list is True:
+            print("Available 'qubit_config' Selections:")
+            for key, (n_qubits, active_qubits) in qubit_options.items():
+                print(f"{key}: n_qubits = {n_qubits}, active_qubits = {active_qubits} (list of length {active_qubits})")
+            return None, None  # Ensure it returns a tuple to avoid errors
+        
+        # Check if Qubit Configuration is Available for Selection:
+        if qubit_config not in qubit_options:
+            if qubit_config is None:
+                qubit_config = "mnist" # Default to 10-qubit config
+            else:
+                raise ValueError(f"Invalid qubit_config: {qubit_config}. Set 'qubit_list=True' to view available options.")
+        
+        # Define Configuration:
+        n_qubits, active_qubits = qubit_options[qubit_config]
+        active_qubits = list(range(active_qubits)) # Convert 'active_qubits' to list
+
+        return n_qubits, active_qubits
 
     # BASIS MATRIX:
     def b_mat(self, i, j, n):
@@ -49,7 +98,7 @@ class GellMannOps:
         This is the i,j th basis vector on the space of n x n real matrices.
         Returns np.array of floats, shape (n,n).
 
-        List of Parameters:
+        Parameters:
         -> param 'i': int, row index (must be < n)
         -> param 'j': int, column index (must be < n)
         -> param 'n': int, dimension of the matrices
@@ -135,14 +184,14 @@ class ParamOps(GellMannOps):
     """
     def __init__(self):
         super().__init__()
-        self.gell_ops = GellMannOps()
-        # MNIST DATAL:
-        # self.n_qubits = 10
-        # self.active_qubits = 10
-        # TEST:
-        self.n_qubits = 2
-        self.active_qubits = 2
-        self.num_wires = 2 # For QCNN Drawings
+        # GELLMANNOPS:
+        self.gell_ops = GellMannOps() # Initialize 'GellMannOps' to access variables
+        # QUBITS:
+        self.n_qubits = self.gell_ops.n_qubits
+        # ACTIVE QUBITS:
+        self.active_qubits = self.gell_ops.active_qubits
+        # WIRES:
+        self.num_wires = self.gell_ops.num_wires
 
     # TYPECASTING WEIGHTS FUNCTION:
     def transform_weights(self, params):
@@ -164,14 +213,14 @@ class ParamOps(GellMannOps):
         number of qubits (VERSION #1).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #---------------------------------------
-            
+        #-------------------------------
+        
         params_flat = params.reshape(-1)
         opt_length = (2**n_qubits)
 
@@ -190,14 +239,6 @@ class ParamOps(GellMannOps):
         Transforms the weights into the appropriate broadcasting form for the given
         number of qubits, and includes an optional padding feature (VERSION #2).
         """
-        # QUBIT CHECK:
-        #-------------------------------------
-        # Check 'n_qubits' is passed:
-        if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
             
         params_flat = params.reshape(-1)
         opt_length = (2**n_qubits)
@@ -221,13 +262,13 @@ class ParamOps(GellMannOps):
         number of qubits (VERSION #3; CURRENT VERSION).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
             
         params_flat = params.reshape(-1)
         # params = np.array(params, requires_grad=True)
@@ -246,13 +287,13 @@ class ParamOps(GellMannOps):
         'requires_grad' set to 'True' (VERSION #1).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
 
         params_flat = params.reshape(-1)
         opt_length = (2**n_qubits)
@@ -288,13 +329,13 @@ class ParamOps(GellMannOps):
         -> 'default' : No conversion, keeps original type
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
 
         # Dictionary for dtype selection
         dtype_dict = {
@@ -335,6 +376,17 @@ class ParamOps(GellMannOps):
 
     # ******* UPDATED WEIGHTS TRANSFORMATION VERSION(S) *******
 
+
+    # UPDATED QUBIT SELECTION FUNCTION:
+    def qubit_select_lppc(self):
+        """
+        Returns the most recent version of the QUBIT SELECTION function used in the 
+        QCNN with relevant and appropriate parameters passed.
+        """
+        # Return Qubit Selection ('qubit_select') with appropriate arguments:
+        return self.qubit_select(self, qubit_config='mnist', list=False,
+                    num_q=True, num_active_q=True)
+    
 
     # UPDATED TRANSFORMING WEIGHTS FUNCTION:
     def transform_weights_lppc(self, *args, **kwargs):

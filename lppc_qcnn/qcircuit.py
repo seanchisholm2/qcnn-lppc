@@ -18,6 +18,10 @@ from pennylane import numpy as np
 # mpl.rcParams.update(mpl.rcParamsDefault)  # NOT ACCESSED
 # import matplotlib.pyplot as plt  # NOT ACCESSED
 
+# OTHER
+# *1* Scipy:
+# from scipy.linalg import expm
+
 
 ################### QUANTUM CIRCUIT AND LAYERS CLASS ######################
 
@@ -31,11 +35,14 @@ class QCircuitLPPC:
     defines quantum circuits.
     """
     def __init__(self):
+        # GELLMANNOPS:
         self.gell_ops = gell_ops() # Initialize 'GellMannOps' to access variables
+        # QUBITS:
         self.n_qubits = self.gell_ops.n_qubits
-        self.num_active_qubits = self.gell_ops.num_active_qubits
-        self.num_qubits = self.gell_ops.num_qubits
+        # ACTIVE QUBITS:
         self.active_qubits = self.gell_ops.active_qubits
+        # WIRES:
+        self.num_wires = self.gell_ops.num_wires
 
     # CONVOLUTIONAL LAYER (VERSION #1):
     def conv_layer_V1(self, weights, active_qubits,
@@ -44,13 +51,13 @@ class QCircuitLPPC:
         Applies a quantum convolutional layer (VERSION #1).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
 
         for i in range(0, active_qubits, 2):
             # First rotation on second qubit of pair:
@@ -80,13 +87,13 @@ class QCircuitLPPC:
         Applies a quantum convolutional layer (VERSION #2).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
 
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
         pool_operators = gell_ops.generate_gell_mann(gell_ops, (2**n_qubits))
@@ -115,13 +122,13 @@ class QCircuitLPPC:
         based on a conditional measurement (VERSION #1).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
 
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
         pool_operators = gell_ops.generate_gell_mann(gell_ops, (2**n_qubits))
@@ -166,13 +173,13 @@ class QCircuitLPPC:
         based on a conditional measurement (VERSION #2).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
 
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
         pool_operators = gell_ops.generate_gell_mann(gell_ops, (2**n_qubits))
@@ -216,13 +223,13 @@ class QCircuitLPPC:
         based on a conditional measurement (VERSION #3).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
         
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
         pool_operators = gell_ops.generate_gell_mann(gell_ops, 2**len(n_qubits))
@@ -267,13 +274,13 @@ class QCircuitLPPC:
         Applies a fully connected layer to the remaining active qubits (VERSION #1).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
 
         num_qubits = len(active_qubits)  # Initialize active qubits
 
@@ -292,13 +299,13 @@ class QCircuitLPPC:
         Applies a fully connected layer to the remaining active qubits (VERSION #2).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
         
         # Generate Gell-Mann matrices for vector space:
         fc_mats = gell_ops.generate_gell_mann(gell_ops, 2**len(n_qubits))
@@ -316,20 +323,18 @@ class QCircuitLPPC:
         and a fully connected layer, and then measures the qubits (VERSION #1).
         """
         # ACTIVE QUBIT CHECK:
-        #-------------------------------------------------
-        # Check 'active_qubits' is passed:
+        #-----------------------------------------------
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            # FOR RUNNING:
+            active_qubits = self.active_qubits
             active_qubits = list(range(active_qubits))
-        
+
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------------------
+        #-----------------------------------------------
 
         # Apply Amplitude Embedding:
         qml.AmplitudeEmbedding(x, wires=range(self.n_qubits), normalize=True)
@@ -356,20 +361,18 @@ class QCircuitLPPC:
         and a fully connected layer, and then measures the qubits (VERSION #2).
         """
         # ACTIVE QUBIT CHECK:
-        #-------------------------------------------------
-        # Check 'active_qubits' is passed:
+        #-----------------------------------------------
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            # FOR RUNNING:
+            active_qubits = self.active_qubits
             active_qubits = list(range(active_qubits))
-        
+
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------------------
+        #-----------------------------------------------
 
         # Amplitude Embedding:
         if draw is not True:
@@ -453,12 +456,15 @@ class DrawQC(QCircuitLPPC):
     """
     def __init__(self):
         super().__init__()
-        self.gell_ops = gell_ops() # Initialize 'GellMannOps' to access variables
         self.qc_circ = QCircuitLPPC() # Initialize 'QCircuitLPPC' to access circuit functions
+        # GELLMANNOPS:
+        self.gell_ops = gell_ops() # Initialize 'GellMannOps' to access variables
+        # QUBITS:
         self.n_qubits = self.gell_ops.n_qubits
-        self.num_active_qubits = self.gell_ops.num_active_qubits
-        self.num_qubits = self.gell_ops.num_qubits
+        # ACTIVE QUBITS:
         self.active_qubits = self.gell_ops.active_qubits
+        # WIRES:
+        self.num_wires = self.gell_ops.num_wires
 
     # POOLING LAYER DRAWING FUNCTION:
     def draw_pool_layer(self, params, x, active_qubits=None, n_qubits=None,
@@ -470,20 +476,18 @@ class DrawQC(QCircuitLPPC):
         circuit diagrams.
         """
         # ACTIVE QUBIT CHECK:
-        #-------------------------------------------------
-        # Check 'active_qubits' is passed:
+        #-----------------------------------------------
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            # FOR RUNNING:
+            active_qubits = self.active_qubits
             active_qubits = list(range(active_qubits))
-        
+
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------------------
+        #-----------------------------------------------
         
         # Default Recent Version (V3):
         num_pool = [1, 2, 3] # Initialize Number of Versions
@@ -495,7 +499,6 @@ class DrawQC(QCircuitLPPC):
             raise ValueError("Version of pooling layer must equal 1, 2, or 3.")
 
         # Circuit to Draw Layer:
-        #------------------------------------------------------------------------
         dev = qml.device("default.qubit", wires=n_qubits) # Initialize Device
 
         # Initialize Circuit:
@@ -509,7 +512,6 @@ class DrawQC(QCircuitLPPC):
                 self.pool_layer_V3(self, params, active_qubits)
             
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
-        #------------------------------------------------------------------------
 
         # Draw and Print Circuit:
         drawing = qml.draw(pool_circuit, expansion_strategy="device")(self, params, active_qubits)
@@ -525,21 +527,19 @@ class DrawQC(QCircuitLPPC):
         defaults to the most recent version if nothing is passed. Uses qml.draw() to complete
         circuit diagrams.
         """
-        # ACTIVE QUBIT CHECK:
-        #-------------------------------------------------
-        # Check 'active_qubits' is passed:
+         # ACTIVE QUBIT CHECK:
+        #-----------------------------------------------
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            # FOR RUNNING:
+            active_qubits = self.active_qubits
             active_qubits = list(range(active_qubits))
-        
+
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------------------
+        #-----------------------------------------------
 
         # Default Recent Version (V2):
         num_conv = [1, 2] # Initialize Number of Versions
@@ -551,7 +551,6 @@ class DrawQC(QCircuitLPPC):
             raise ValueError("Version of convolutional layer must equal 1 or 2.")
 
         # Circuit to Draw Layer:
-        #------------------------------------------------------------------------
         dev = qml.device("default.qubit", wires=n_qubits) # Initialize Device
 
         # Initialize Circuit:
@@ -563,7 +562,6 @@ class DrawQC(QCircuitLPPC):
                 self.conv_layer_V2(self, params, active_qubits)
             
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
-        #------------------------------------------------------------------------
 
         # Draw and Print Circuit:
         drawing = qml.draw(conv_circuit, expansion_strategy="device")(self, params, active_qubits)
@@ -580,32 +578,29 @@ class DrawQC(QCircuitLPPC):
         circuit diagrams.
         """
         # ACTIVE QUBIT CHECK:
-        #-------------------------------------------------
-        # Check 'active_qubits' is passed:
+        #-----------------------------------------------
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            # FOR RUNNING:
+            active_qubits = self.active_qubits
             active_qubits = list(range(active_qubits))
-        
+
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------------------
+        #-----------------------------------------------
 
         # Default Recent Version (V2):
         num_fc = [1, 2] # Initialize Number of Versions
         
-        # VERSION CHECK:
+        # Check Version:
         if version is None:
             version = num_fc[-1]
         if version not in num_fc:
             raise ValueError("Version of fuly connected layer must equal 1 or 2.")
 
         # Circuit to Draw Layer:
-        #------------------------------------------------------------------------
         dev = qml.device("default.qubit", wires=n_qubits) # Initialize Device
 
         # Initialize Circuit:
@@ -617,7 +612,6 @@ class DrawQC(QCircuitLPPC):
                 self.fully_connected_layer_V2(self, params, active_qubits)
             
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
-        #------------------------------------------------------------------------
 
         # Draw and Print Circuit:
         drawing = qml.draw(fc_circuit, expansion_strategy="device")(self, params, active_qubits)
@@ -641,22 +635,24 @@ class OptStepLPPC(QCircuitLPPC):
         self.max_iteration = 100
         self.conv_tol = 1e-06
 
-        self.gell_ops = gell_ops() # Initialize GellMannOps to access variables
+        # GELLMANNOPS:
+        self.gell_ops = gell_ops() # Initialize 'GellMannOps' to access variables
+        # QUBITS:
         self.n_qubits = self.gell_ops.n_qubits
-        self.num_active_qubits = self.gell_ops.num_active_qubits
-        self.num_qubits = self.gell_ops.num_qubits
+        # ACTIVE QUBITS:
         self.active_qubits = self.gell_ops.active_qubits
+        # WIRES:
+        self.num_wires = self.gell_ops.num_wires
 
         # MEMORY:
-        self.gen_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights']  # General
-        self.batch_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights',
-                                   'batch_cost', 'total_cost']  # Batch
-        self.loss_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights',
-                                  'loss_history']  # Loss
+        # self.gen_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights']  # General
+        # self.batch_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights',
+        #                            'batch_cost', 'total_cost']  # Batch
+        # self.loss_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights',
+        #                           'loss_history']  # Loss
+        
         self.step_size = 5
         self.loss_history = []
-        self.active_qubits = self.num_active_qubits
-        self.n_qubits = self.n_qubits_mnist
 
     # SELECT OPTIMIZER:
     def qcnn_opt_select(self, opt_methods=None, opt_num=None):
@@ -734,13 +730,13 @@ class OptStepLPPC(QCircuitLPPC):
         calculates the MSE for the updated version of the LPPC QCNN V2).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #-------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        #-------------------------------
 
         # Calculate Predictions:
         predictions = np.array([self.qcircuit_lppc(self, params, xi) for xi in x])
@@ -756,20 +752,18 @@ class OptStepLPPC(QCircuitLPPC):
         parameters and average cost (VERSION #1).
         """
         # ACTIVE QUBIT CHECK:
-        #-------------------------------------------------
-        # Check 'active_qubits' is passed:
+        #-----------------------------------------------
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            # FOR RUNNING:
+            active_qubits = self.active_qubits
             active_qubits = list(range(active_qubits))
-        
+
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------------------
+        #-----------------------------------------------
 
         # Shuffle Data:
         permutation = np.random.permutation(len(x))
@@ -802,27 +796,28 @@ class OptStepLPPC(QCircuitLPPC):
 
     
     # STOCHASTIC GRADIENT DESCENT FUNCTION (VERSION #2):
-    def stoch_grad_V2(self, opt, cost, params, x, y, learning_rate, batch_size, max_iterations,
-                      conv_tol, active_qubits=None, n_qubits=None):
+    def stoch_grad_V2(self, opt, cost, params, x, y, batch_size, max_iterations, conv_tol,
+                      learning_rate, active_qubits=None, n_qubits=None):
         """
         Updates parameters using stochastic gradient descent and returns the updated parameters
         and average cost (VERSION #2).
+
+        Changes 7/15/24: Removed 'learning_rate' from arguments; used in QCNN training loop, but
+        not in stochastic gradient descent function.
         """
         # ACTIVE QUBIT CHECK:
-        #-------------------------------------------------
-        # Check 'active_qubits' is passed:
+        #-----------------------------------------------
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            # FOR RUNNING:
+            active_qubits = self.active_qubits
             active_qubits = list(range(active_qubits))
-        
+
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
             # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------------------
+        #-----------------------------------------------
         
         # Shuffle Data:
         permutation = np.random.permutation(len(x))
@@ -863,8 +858,8 @@ class OptStepLPPC(QCircuitLPPC):
     def accuracy_V1(self, predictions, y):
         """
         Calculates the accuracy of the QCNN model on the provided testing data. Assumes
-        predictions were calculated already, not dependent on quantum circuit
-        function (VERSION #1).
+        predictions were calculated already. Dependent on quantum circuit function version passed 
+        in 'qcircuit_lppc' (VERSION #1).
         """
         # Calculate Number of Correct Predictions:
         true_predictions = np.sum(predictions == y)
@@ -873,40 +868,57 @@ class OptStepLPPC(QCircuitLPPC):
         accuracy = true_predictions / len(y)
 
         return accuracy
-    
+
     # ACCURACY (VERSION #2):
-    def accuracy_V2(self, predictions, y):
+    def accuracy_V2(self, params, x, y, precision=False,
+                    n_qubits=None):
         """
-        Calculates the accuracy and precision of the QCNN model on the provided testing 
-        data. Assumes predictions were calculated already, not dependent on quantum 
-        circuit function. Includes checks for data type consistency, matching shapes,
-        and handling empty arrays (VERSION #2).
+        Calculates the accuracy of the QCNN model on the provided testing data. Assumes
+        predictions were NOT calculated already (V1), and thus calculates them prior to determining
+        the number of correct predictions. Includes checks for data type consistency, matching 
+        shapes, dependent on quantum circuit function version passed in 'qcircuit_lppc', and
+        additionally calculates precision if requested (VERSION #2).
         """
+        # QUBIT CHECK:
+        #-------------------------------
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
+            # n_qubits = 10
+        #-------------------------------
+
+        # PREDICTIONS:
+        #---------------------------------------------------------------
+        predictions = np.array([self.qcircuit_lppc(self,
+                                params, xi) for xi in x])
+
         # Ensure Data Type Consistency:
         predictions = np.asarray(predictions)
         y = np.asarray(y)
 
-        # Check 'predictions' and 'y' have Same Shape:
+        # Ensure Shape Consistency Between 'predictions' and 'y':
         if predictions.shape != y.shape:
             raise ValueError("Shape of predictions and y must match.")
-
-        # Handle Empty Arrays:
-        if len(y) == 0:
-            raise ValueError("The array of true labels 'y' is empty.")
-
+        #---------------------------------------------------------------
+    
         # Calculate Number of Correct Predictions:
         true_predictions = np.sum(predictions == y)
 
         # Calculate Accuracy:
         accuracy = true_predictions / len(y)
 
-        # Calculate Precision:
-        true_positives = np.sum((predictions == 1) & (y == 1))
-        predicted_positives = np.sum(predictions == 1)
-        # Adding Epsilon for Numerical Stability:
-        precision = true_positives / (predicted_positives + np.finfo(float).eps)
+        # Precision Check:
+        if precision is True:
+            # Calculate Precision if Requested:
+            true_positives = np.sum((predictions == 1) & (y == 1))
+            predicted_positives = np.sum(predictions == 1)
 
-        return accuracy, precision
+            # Adding Epsilon for Numerical Stability:
+            precision_value = true_positives / (predicted_positives + np.finfo(float).eps)
+            return accuracy, precision_value
+
+        return accuracy
 
 
     # ******* UPDATED OPTIMIZATION VERSION(S) *******

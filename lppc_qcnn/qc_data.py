@@ -15,6 +15,10 @@ from torch.utils.data import DataLoader
 # import tensorflow as tf  # NOT ACCESSED
 # from tensorflow.keras.datasets import mnist  # NOT ACCESSED
 
+# OTHER
+# *1* Scipy:
+# from scipy.linalg import expm
+
 
 ################### MNIST DATASET CLASS ######################
 
@@ -27,11 +31,14 @@ class DataLPPC:
     Class for loading and processing MNIST data for quantum convolutional neural networks.
     """
     def __init__(self):
-        self.gell_ops = gell_ops() # Initialize GellMannOps to access its variables
-        self.n_qubits = gell_ops.n_qubits
-        self.num_active_qubits = gell_ops.num_active_qubits
-        self.num_qubits = gell_ops.num_qubits
-        self.active_qubits = gell_ops.active_qubits
+        # GELLMANNOPS:
+        self.gell_ops = gell_ops() # Initialize 'GellMannOps' to access variables
+        # QUBITS:
+        self.n_qubits = self.gell_ops.n_qubits
+        # ACTIVE QUBITS:
+        self.active_qubits = self.gell_ops.active_qubits
+        # WIRES:
+        self.num_wires = self.gell_ops.num_wires
     
     # LOADING MNIST DATA FUNCTION (TENSORFLOW):
     @staticmethod
@@ -77,14 +84,25 @@ class DataLPPC:
     
     # REDUCING IMPORTED MNIST DATA FUNCTION:
     @staticmethod
-    def mnist_reduce(train_images, train_labels, test_images, test_labels):
+    def mnist_reduce(train_images, train_labels, test_images, test_labels,
+                     n_train=None, n_test=None):
         """
         Reduces the dataset size and converts it from multi-classification to binary 
         classification (Note: available class selections are: 0, 1; include 'n_train' and
         'n_test' in arguments as needed).
         """
-        # n_train = 500 # Sample TRAIN Batch Size
-        # n_test = 100 # Sample TEST Batch Size
+        # DATA BATCH CHECK:
+        #-------------------------------------------------
+        # Check 'n_train' is passed:
+        if n_train is None:
+            n_train = None # KEEP AS 'NONE' FOR TESTING
+            # n_train = 500
+        
+        # Check 'n_test' is passed:
+        if n_test is None:
+            n_test = None # KEEP AS 'NONE' FOR TESTING
+            # n_test = 100
+        #-------------------------------------------------
 
         ############# Multi-Classification -> Binary Classification ################
         # Select Indices for Classes 0 and 1:
@@ -135,14 +153,15 @@ class DataLPPC:
         """
         Pads MNIST train and test images to the desired shape and returns the padded datasets.
         """
-        # QUBIT CHECK:
-        #-------------------------------------
+        # QUBIT CHECK (STATIC):
+        #------------------------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
+            # FOR RUNNING:
             # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+            n_qubits_vals = [2, 3, 4, 6, 8, 9, 10, 12]
+            n_qubits = n_qubits_vals[n_qubits_vals.index(10)]
+        #------------------------------------------------------
 
         # Convert Data to Numpy Arrays:
         x_train = np.array(train_images)
@@ -152,9 +171,18 @@ class DataLPPC:
         y_train = np.array(train_labels)
         y_test = np.array(test_labels)
 
-        # Pad 'x_train' and 'x_test' with zeros to desired shape (, (2**n_qubits)):
-        x_train = np.pad(x_train, ((0, 0), (0, (2**n_qubits) - x_train.shape[1])), mode='constant')
-        x_test = np.pad(x_test, ((0, 0), (0, (2**n_qubits) - x_test.shape[1])), mode='constant')
+        # Pad 'x_train' and 'x_test' with zeros to desired shape (,(2**n_qubits)) (Note: based on
+        # package files, shape may required shape[0], not shape[1], make sure to confirm):
+
+        # *1* Check Size of 'x_train' Batch:
+        if (2**n_qubits) - x_train.shape[1] > 0:
+            x_train = np.pad(x_train, ((0, 0), (0, (2**n_qubits) - x_train.shape[1])),
+                             mode='constant') # Pad 'x_train' as Needed
+        # *2* Check Size of 'x_test' Batch:
+        if (2**n_qubits) - x_test.shape[1] > 0:
+            x_test = np.pad(x_test, ((0, 0), (0, (2**n_qubits) - x_test.shape[1])),
+                            mode='constant') # Pad 'x_test' as Needed
+
 
         return x_train, y_train, x_test, y_test
     
