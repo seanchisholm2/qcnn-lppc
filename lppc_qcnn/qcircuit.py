@@ -23,7 +23,7 @@ from pennylane import numpy as np
 
 
 # CLASS IMPORTS ("gellmann_ops.py"):
-from .gellmann_ops import GellMannOps as gell_ops
+from .gellmann_ops import GellMannOps
 
 class QCircuitLPPC:
     """
@@ -31,11 +31,25 @@ class QCircuitLPPC:
     defines quantum circuits.
     """
     def __init__(self):
-        self.gell_ops = gell_ops() # Initialize 'GellMannOps' to access variables
-        self.n_qubits = self.gell_ops.n_qubits
-        self.num_active_qubits = self.gell_ops.num_active_qubits
-        self.num_qubits = self.gell_ops.num_qubits
-        self.active_qubits = self.gell_ops.active_qubits
+        self.gell_ops = GellMannOps() # Initialize 'GellMannOps' to access variables
+        # QUBITS (TEST):
+        self.n_qubits_test1 = 2 # Test Config #1 (2 Qubits)
+        self.n_qubits_test2 = 4 # Test Config #2 (4 Qubits)
+        self.n_qubits_test3 = 6 # Test Config #3 (6 Qubits)
+        # QUBITS:
+        self.n_qubits_mnist = 10 # Test Config for MNIST (10 Qubits)
+        self.n_qubits_lppc = self.n_qubits_test3 # Define LPPC QCNN config with selected value
+        self.n_qubits = self.n_qubits_lppc # Set 'n_qubits_lppc' equal to 'n_qubits'
+        # ACTIVE QUBITS (TEST):
+        self.active_qubits_test1 = 2 # Test Config #1 (2 Qubits)
+        self.active_qubits_test2 = 4 # Test Config #2 (4 Qubits)
+        self.active_qubits_test3 = 6 # Test Config #3 (6 Qubits)
+        # ACTIVE QUBITS:
+        self.active_qubits_mnist = 10 # Test Config for MNIST (10 Qubits)
+        self.active_qubits_lppc = self.n_qubits_test3 # Define LPPC QCNN config with selected value
+        self.active_qubits = self.active_qubits_lppc # Set 'active_qubits_lppc' equal to 'active_qubits'
+        # WIRES:
+        self.num_wires = 2 # For QCNN Drawings
 
     # CONVOLUTIONAL LAYER (VERSION #1):
     def conv_layer_V1(self, weights, active_qubits,
@@ -453,7 +467,7 @@ class DrawQC(QCircuitLPPC):
     """
     def __init__(self):
         super().__init__()
-        self.gell_ops = gell_ops() # Initialize 'GellMannOps' to access variables
+        self.gell_ops = GellMannOps() # Initialize 'GellMannOps' to access variables
         self.qc_circ = QCircuitLPPC() # Initialize 'QCircuitLPPC' to access circuit functions
         # QUBITS (TEST):
         self.n_qubits_test1 = 2 # Test Config #1 (2 Qubits)
@@ -889,38 +903,55 @@ class OptStepLPPC(QCircuitLPPC):
         return accuracy
     
     # ACCURACY (VERSION #2):
-    def accuracy_V2(self, predictions, y):
+    def accuracy_V2(self, params, x, y, precision=False,
+                    n_qubits=None):
         """
-        Calculates the accuracy and precision of the QCNN model on the provided testing 
-        data. Assumes predictions were calculated already, not dependent on quantum 
-        circuit function. Includes checks for data type consistency, matching shapes,
-        and handling empty arrays (VERSION #2).
+        Calculates the accuracy of the QCNN model on the provided testing data. Assumes
+        predictions were NOT calculated already (V1), and thus calculates them prior to determining
+        the number of correct predictions. Includes checks for data type consistency, matching 
+        shapes, dependent on quantum circuit function version passed in 'qcircuit_lppc', and
+        additionally calculates precision if requested (VERSION #2).
         """
+        # QUBIT CHECK:
+        #-------------------------------
+        # Check 'n_qubits' is passed:
+        if n_qubits is None:
+            # FOR RUNNING:
+            n_qubits = self.n_qubits
+            # n_qubits = 10
+        #-------------------------------
+
+        # PREDICTIONS:
+        #---------------------------------------------------------------
+        predictions = np.array([self.qcircuit_lppc(self,
+                                params, xi) for xi in x])
+
         # Ensure Data Type Consistency:
         predictions = np.asarray(predictions)
         y = np.asarray(y)
 
-        # Check 'predictions' and 'y' have Same Shape:
+        # Ensure Shape Consistency Between 'predictions' and 'y':
         if predictions.shape != y.shape:
             raise ValueError("Shape of predictions and y must match.")
-
-        # Handle Empty Arrays:
-        if len(y) == 0:
-            raise ValueError("The array of true labels 'y' is empty.")
-
+        #---------------------------------------------------------------
+    
         # Calculate Number of Correct Predictions:
         true_predictions = np.sum(predictions == y)
 
         # Calculate Accuracy:
         accuracy = true_predictions / len(y)
 
-        # Calculate Precision:
-        true_positives = np.sum((predictions == 1) & (y == 1))
-        predicted_positives = np.sum(predictions == 1)
-        # Adding Epsilon for Numerical Stability:
-        precision = true_positives / (predicted_positives + np.finfo(float).eps)
+        # Precision Check:
+        if precision is True:
+            # Calculate Precision if Requested:
+            true_positives = np.sum((predictions == 1) & (y == 1))
+            predicted_positives = np.sum(predictions == 1)
 
-        return accuracy, precision
+            # Adding Epsilon for Numerical Stability:
+            precision_value = true_positives / (predicted_positives + np.finfo(float).eps)
+            return accuracy, precision_value
+
+        return accuracy
 
 
     # ******* UPDATED OPTIMIZATION VERSION(S) *******

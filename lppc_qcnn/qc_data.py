@@ -27,22 +27,10 @@ class DataLPPC:
     Class for loading and processing MNIST data for quantum convolutional neural networks.
     """
     def __init__(self):
-        # QUBITS (TEST):
-        self.n_qubits_test1 = 2 # Test Config #1 (2 Qubits)
-        self.n_qubits_test2 = 4 # Test Config #2 (4 Qubits)
-        self.n_qubits_test3 = 6 # Test Config #3 (6 Qubits)
         # QUBITS:
-        self.n_qubits_mnist = 10 # Test Config for MNIST (10 Qubits)
-        self.n_qubits_lppc = self.n_qubits_test3 # Define LPPC QCNN config with selected value
-        self.n_qubits = self.n_qubits_lppc # Set 'n_qubits_lppc' equal to 'n_qubits'
-        # ACTIVE QUBITS (TEST):
-        self.active_qubits_test1 = 2 # Test Config #1 (2 Qubits)
-        self.active_qubits_test2 = 4 # Test Config #2 (4 Qubits)
-        self.active_qubits_test3 = 6 # Test Config #3 (6 Qubits)
+        self.n_qubits = 6 # -> Test Config #3 (6 Qubits)
         # ACTIVE QUBITS:
-        self.active_qubits_mnist = 10 # Test Config for MNIST (10 Qubits)
-        self.active_qubits_lppc = self.n_qubits_test3 # Define LPPC QCNN config with selected value
-        self.active_qubits = self.active_qubits_lppc # Set 'active_qubits_lppc' equal to 'active_qubits'
+        self.active_qubits = 6 # -> Test Config #3 (6 Qubits)
         # WIRES:
         self.num_wires = 2 # For QCNN Drawings
     
