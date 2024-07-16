@@ -8,16 +8,16 @@ from pennylane import numpy as np
 
 # TorchVision:
 import torch
-# from torchvision import datasets, transforms  # NOT ACCESSED
-# from torch.utils.data import DataLoader  # NOT ACCESSED
+from torchvision import datasets, transforms  # (NOT ACCESSED)
+from torch.utils.data import DataLoader  # (NOT ACCESSED)
 
 # TensorFlow:
 # import tensorflow as tf  # NOT ACCESSED
 # from tensorflow.keras.datasets import mnist  # NOT ACCESSED
 
-# Other:
-# import scipy
-from scipy.linalg import expm
+# OTHER:
+# *1* Scipy:
+# from scipy.linalg import expm
 
 
 ################### GELL MANN MATRIX OPERATION CLASS ######################
@@ -28,20 +28,80 @@ class GellMannOps:
     Class for generating Gell-Mann matrices and related operations.
     """
     def __init__(self):
+        # QUBITS (TEST):
+        self.n_qubits_test1 = 2 # Test Config #1 (2 Qubits)
+        self.n_qubits_test2 = 4 # Test Config #2 (4 Qubits)
+        self.n_qubits_test3 = 6 # Test Config #3 (6 Qubits)
         # QUBITS:
-        self.n_qubits_mnist = 10
-        self.n_qubits_lppc = 4
-        self.n_qubits_test = 2
-        self.n_qubits = self.n_qubits_test
+        self.n_qubits_mnist = 10 # Test Config for MNIST (10 Qubits)
+        self.n_qubits_lppc = self.n_qubits_test3 # Define LPPC QCNN config with selected value
+        self.n_qubits = self.n_qubits_lppc # Set 'n_qubits_lppc' equal to 'n_qubits'
+        # ACTIVE QUBITS (TEST):
+        self.active_qubits_test1 = 2 # Test Config #1 (2 Qubits)
+        self.active_qubits_test2 = 4 # Test Config #2 (4 Qubits)
+        self.active_qubits_test3 = 6 # Test Config #3 (6 Qubits)
         # ACTIVE QUBITS:
-        self.active_qubits_mnist = 10
-        self.active_qubits_test = 2
-        # self.active_qubits = self.active_qubits_mnist # SET ACTIVE QUBITS TO _MNIST_ VALUE
-        self.active_qubits = self.active_qubits_test # SET ACTIVE QUBITS TO _TEST_ VALUE
-        self.n_qubits = self.n_qubits_test
+        self.active_qubits_mnist = 10 # Test Config for MNIST (10 Qubits)
+        self.active_qubits_lppc = self.n_qubits_test3 # Define LPPC QCNN config with selected value
+        self.active_qubits = self.active_qubits_lppc # Set 'active_qubits_lppc' equal to 'active_qubits'
         # WIRES:
         self.num_wires = 2 # For QCNN Drawings
 
+
+    # QUBIT AND ACTIVE QUBIT NUMBER SELECTION:
+    def qubit_select(self, qubit_config=None, qubit_list=False):
+        """
+        Selects the number of qubits and active qubits used in QCNN based on string value passed
+        for 'qubit_config'. Lists all available selections for number of qubits and active qubits when
+        setting 'qubit_list=True' (Note: setting 'qubit_list=True' returns null values).
+
+        Available Qubit Configurations:
+        qubit_options = {
+            "test + Integer": "'Integer' Number of Qubits/Active Qubits
+            "lppc": 4 Qubits/Active Qubits (same as "test2")
+            "mnist": 10 Qubits/Active Qubits
+            "nullconfig": No Qubits/Active Qubits Defined (Not Defaulted)
+        }
+        """
+        # List of Available Qubit Configurations (THREE total):
+        # (Note: rename )
+        qubit_options = {
+            "test2": (2, 2),
+            "test4": (4, 4),
+            "test6": (6, 6),
+            "test8": (8, 8),
+            "test3": (3, 3),
+            "test9": (9, 9),
+            "test12": (12, 12),
+            "lppc": (4, 4), # SAME AS "test2"
+            "mnist": (10, 10),
+            "nullconfig": (None, None) # NULL QUBITS (as needed)
+        }
+        
+        # Check Qubit Configuration Type:
+        if not isinstance(qubit_config, str) and qubit_config is not None:
+            raise TypeError("qubit_config must be a string. Set 'qubit_list=True' to view available options.")
+        
+        # List Available Configurations:
+        if qubit_list is True:
+            print("Available 'qubit_config' Selections:")
+            for key, (n_qubits, active_qubits) in qubit_options.items():
+                print(f"{key}: n_qubits = {n_qubits}, active_qubits = {active_qubits} (list of length {active_qubits})")
+            return None, None  # Ensure it returns a tuple to avoid errors
+        
+        # Check if Qubit Configuration is Available for Selection:
+        if qubit_config not in qubit_options:
+            if qubit_config is None:
+                qubit_config = "mnist" # Default to 10-qubit config
+            else:
+                raise ValueError(f"Invalid qubit_config: {qubit_config}. Set 'qubit_list=True' to view available options.")
+        
+        # Define Configuration:
+        n_qubits, active_qubits = qubit_options[qubit_config]
+        active_qubits = list(range(active_qubits)) # Convert 'active_qubits' to list
+
+        return n_qubits, active_qubits
+    
     # BASIS MATRIX:
     def b_mat(self, i, j, n):
         """

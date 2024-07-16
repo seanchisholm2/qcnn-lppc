@@ -44,13 +44,13 @@ class QCircuitLPPC:
         Applies a quantum convolutional layer (VERSION #1).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #--------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
+        #--------------------------------------
 
         for i in range(0, active_qubits, 2):
             # First rotation on second qubit of pair:
@@ -80,13 +80,13 @@ class QCircuitLPPC:
         Applies a quantum convolutional layer (VERSION #2).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #--------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
+        #--------------------------------------
 
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
         pool_operators = gell_ops.generate_gell_mann(gell_ops, (2**n_qubits))
@@ -115,13 +115,13 @@ class QCircuitLPPC:
         based on a conditional measurement (VERSION #1).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #--------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
+        #--------------------------------------
 
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
         pool_operators = gell_ops.generate_gell_mann(gell_ops, (2**n_qubits))
@@ -166,13 +166,13 @@ class QCircuitLPPC:
         based on a conditional measurement (VERSION #2).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #--------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
+        #--------------------------------------
 
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
         pool_operators = gell_ops.generate_gell_mann(gell_ops, (2**n_qubits))
@@ -216,13 +216,13 @@ class QCircuitLPPC:
         based on a conditional measurement (VERSION #3).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #--------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
+        #--------------------------------------
         
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
         pool_operators = gell_ops.generate_gell_mann(gell_ops, 2**len(n_qubits))
@@ -267,13 +267,13 @@ class QCircuitLPPC:
         Applies a fully connected layer to the remaining active qubits (VERSION #1).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #--------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
+        #--------------------------------------
 
         num_qubits = len(active_qubits)  # Initialize active qubits
 
@@ -292,13 +292,13 @@ class QCircuitLPPC:
         Applies a fully connected layer to the remaining active qubits (VERSION #2).
         """
         # QUBIT CHECK:
-        #-------------------------------------
+        #--------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
+        #--------------------------------------
         
         # Generate Gell-Mann matrices for vector space:
         fc_mats = gell_ops.generate_gell_mann(gell_ops, 2**len(n_qubits))
@@ -319,16 +319,16 @@ class QCircuitLPPC:
         #-------------------------------------------------
         # Check 'active_qubits' is passed:
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            active_qubits = self.active_qubits
+            # active_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
             active_qubits = list(range(active_qubits))
         
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
         #-------------------------------------------------
 
         # Apply Amplitude Embedding:
@@ -359,16 +359,16 @@ class QCircuitLPPC:
         #-------------------------------------------------
         # Check 'active_qubits' is passed:
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            active_qubits = self.active_qubits
+            # active_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
             active_qubits = list(range(active_qubits))
         
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
         #-------------------------------------------------
 
         # Amplitude Embedding:
@@ -455,10 +455,24 @@ class DrawQC(QCircuitLPPC):
         super().__init__()
         self.gell_ops = gell_ops() # Initialize 'GellMannOps' to access variables
         self.qc_circ = QCircuitLPPC() # Initialize 'QCircuitLPPC' to access circuit functions
-        self.n_qubits = self.gell_ops.n_qubits
-        self.num_active_qubits = self.gell_ops.num_active_qubits
-        self.num_qubits = self.gell_ops.num_qubits
-        self.active_qubits = self.gell_ops.active_qubits
+        # QUBITS (TEST):
+        self.n_qubits_test1 = 2 # Test Config #1 (2 Qubits)
+        self.n_qubits_test2 = 4 # Test Config #2 (4 Qubits)
+        self.n_qubits_test3 = 6 # Test Config #3 (6 Qubits)
+        # QUBITS:
+        self.n_qubits_mnist = 10 # Test Config for MNIST (10 Qubits)
+        self.n_qubits_lppc = self.n_qubits_test3 # Define LPPC QCNN config with selected value
+        self.n_qubits = self.n_qubits_lppc # Set 'n_qubits_lppc' equal to 'n_qubits'
+        # ACTIVE QUBITS (TEST):
+        self.active_qubits_test1 = 2 # Test Config #1 (2 Qubits)
+        self.active_qubits_test2 = 4 # Test Config #2 (4 Qubits)
+        self.active_qubits_test3 = 6 # Test Config #3 (6 Qubits)
+        # ACTIVE QUBITS:
+        self.active_qubits_mnist = 10 # Test Config for MNIST (10 Qubits)
+        self.active_qubits_lppc = self.n_qubits_test3 # Define LPPC QCNN config with selected value
+        self.active_qubits = self.active_qubits_lppc # Set 'active_qubits_lppc' equal to 'active_qubits'
+        # WIRES:
+        self.num_wires = 2 # For QCNN Drawings
 
     # POOLING LAYER DRAWING FUNCTION:
     def draw_pool_layer(self, params, x, active_qubits=None, n_qubits=None,
@@ -473,16 +487,16 @@ class DrawQC(QCircuitLPPC):
         #-------------------------------------------------
         # Check 'active_qubits' is passed:
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            active_qubits = self.active_qubits
+            # active_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
             active_qubits = list(range(active_qubits))
         
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
         #-------------------------------------------------
         
         # Default Recent Version (V3):
@@ -529,16 +543,16 @@ class DrawQC(QCircuitLPPC):
         #-------------------------------------------------
         # Check 'active_qubits' is passed:
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            active_qubits = self.active_qubits
+            # active_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
             active_qubits = list(range(active_qubits))
         
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
         #-------------------------------------------------
 
         # Default Recent Version (V2):
@@ -583,16 +597,16 @@ class DrawQC(QCircuitLPPC):
         #-------------------------------------------------
         # Check 'active_qubits' is passed:
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            active_qubits = self.active_qubits
+            # active_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
             active_qubits = list(range(active_qubits))
         
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
         #-------------------------------------------------
 
         # Default Recent Version (V2):
@@ -737,9 +751,9 @@ class OptStepLPPC(QCircuitLPPC):
         #-------------------------------------
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
         #-------------------------------------
 
         # Calculate Predictions:
@@ -759,16 +773,16 @@ class OptStepLPPC(QCircuitLPPC):
         #-------------------------------------------------
         # Check 'active_qubits' is passed:
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            active_qubits = self.active_qubits
+            # active_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
             active_qubits = list(range(active_qubits))
         
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
         #-------------------------------------------------
 
         # Shuffle Data:
@@ -812,16 +826,16 @@ class OptStepLPPC(QCircuitLPPC):
         #-------------------------------------------------
         # Check 'active_qubits' is passed:
         if active_qubits is None:
-            # active_qubits = self.active_qubits
-            # active_qubits = 10
-            active_qubits = 2 # FOR TESTING
+            active_qubits = self.active_qubits
+            # active_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
             active_qubits = list(range(active_qubits))
         
         # Check 'n_qubits' is passed:
         if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
+            n_qubits = self.n_qubits
+            # n_qubits = 10 # FOR MNIST
+            # n_qubits = 6 # FOR TESTING 7/16
         #-------------------------------------------------
         
         # Shuffle Data:
