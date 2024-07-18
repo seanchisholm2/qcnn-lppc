@@ -57,7 +57,7 @@ from .load_qc_data import LoadDataQC # (STATIC METHOD)
 
 
 # ==============================================================================================
-#                                      QCNN LAYERS CLASS(ES)
+#                                 NEW QCNN LAYERS CLASS
 # ==============================================================================================
 
 
@@ -81,7 +81,6 @@ class LayersQC:
         self.wires = 6
         self.n_wires = 6
         self.num_wires = 6
-        self.n_wires_draw = 2 # (For drawings)
     
     
     # -----------------------------------------------------------
@@ -92,7 +91,7 @@ class LayersQC:
 
 
     # ******* Convolutional Layer *******:
-    def convolutional_layer(self, weights, wires, skip_first_layer=True):
+    def convolutional_layer(weights, wires, skip_first_layer=True):
         """
         Adds a convolutional layer to a circuit.
 
@@ -343,6 +342,11 @@ class LayersQC:
         return qml.probs(wires=(0))
 
 
+# ==============================================================================================
+#                           ORIGINAL QCNN LAYERS CLASS (LPPC)
+# ==============================================================================================
+
+
 class LayersLPPC:
     """
     Contains all relevant circuit and layer functions for the quantum convolutional neural
@@ -363,7 +367,6 @@ class LayersLPPC:
         self.wires = 6
         self.n_wires = 6
         self.num_wires = 6
-        self.n_wires_draw = 2 # (For drawings)
     
     
     # -----------------------------------------------------------
@@ -538,9 +541,9 @@ class LayersLPPC:
         return qml.expval(qml.PauliZ(middle_qubit))
 
 
-# =============================================================================================
-#                                    CIRCUIT DRAWING CLASS(ES)
-# =============================================================================================
+# ==============================================================================================
+#                                NEW CIRCUIT DRAWING CLASS
+# ==============================================================================================
 
 
 class DrawQC(LayersQC):
@@ -581,6 +584,11 @@ class DrawQC(LayersQC):
 
         pass
 
+
+# ==============================================================================================
+#                           ORIGINAL CIRCUIT DRAWING CLASS (LPPC)
+# ==============================================================================================
+    
 
 class DrawLPPC(LayersLPPC):
     """
@@ -720,170 +728,9 @@ class DrawLPPC(LayersLPPC):
 
 
 # ==============================================================================================
-#                             OPTIMIZATION AND TRAINING CLASS(ES)
+#                             NEW OPTIMIZATION AND TRAINING CLASS
 # ==============================================================================================
 
-
-class TrainLPPC(DrawLPPC):
-    """
-    Contains functions for optimization steps in a Quantum Convolutional Neural Network (QCNN).
-    It depends on the layer functions provided in the QCircuitLPPC class.
-    """
-    def __init__(self):
-        self.lppc_layers = LayersLPPC()
-        self.lppc_draw = DrawLPPC()
-        # QUBITS:
-        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
-        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
-        # ACTIVE QUBITS:
-        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
-        # WIRES:
-        self.wires = 6
-        self.n_wires = 6
-        self.num_wires = 2 # For drawings
-
-        # TRAINING:
-        self.learning_rate = 0.01
-        self.num_steps = 100
-        self.batch_size = 10
-        self.max_iteration = 100
-        self.conv_tol = 1e-06
-
-        # MEMORY:
-        self.gen_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights']  # General
-        self.batch_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights',
-                                   'batch_cost', 'total_cost']  # Batch
-        self.loss_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights',
-                                  'loss_history']  # Loss
-        self.step_size = 5
-        self.loss_history = []
-
-    
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-    #         ORIGINAL OPTIMIZATION FUNCTIONS (LPPC)
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-
-    
-    # ******* Select QCNN Optimizer *******:
-    def qcnn_opt_select(self, opt_methods=None, opt_num=None):
-        """
-        Selects and returns the desired optimizer from the given list of optimizers, based on the 
-        given value for 'opt_num'. Allows list of usable optimizers to be appended if necessary, but 
-        defaults to a list of optimizers including the Stochastic Gradient Descent (SGD) Optimizer, 
-        the ADAM Optimizer, RMS Prop Optimizer, and more (6 total, using PennyLane). 
-        Raises "ValueError: If opt_num is not 1, 2, or 3".
-
-        Note: In "qc_opt_list()", "opt_methods" is a list of optimizer options with string versions of
-        their associated names, and not actual optimizers themselves. The actual optimizers are 
-        instantiated with "opt_methods" in the function "qc_opt_select()".
-        """
-        # List of Available Optimizers (SIX total):
-        if opt_methods is None:
-            opt_methods = {
-                1: qml.GradientDescentOptimizer(),
-                2: qml.AdamOptimizer(),
-                3: qml.RMSPropOptimizer(),
-                4: qml.MomentumOptimizer(),
-                5: qml.NesterovMomentumOptimizer(),
-                6: qml.AdagradOptimizer(),
-            }
-            # Instantiate Default Optimizer (Gradient Descent):
-            if opt_num is None:
-                # Returns 'GradientDescentOptimizer' if No Selection is Made:
-                return qml.GradientDescentOptimizer()
-
-        if opt_num not in opt_methods:
-            raise ValueError("opt_num must be equal to an integer value 1-6. for default. Use 'qc_opt_print' to check full list.")
-
-        # Get Optimizer Selection:
-        opt = opt_methods.get(opt_num)
-
-        return opt
-
-    # ******* Original Mean Squared Error Cost *******:
-    def mse_cost(self, params, x, y, n_qubits=None):
-        """
-        Computes the Mean Squared Error (MSE) cost function (Note: Specifically 
-        calculates the MSE for the updated version of the LPPC QCNN V2).
-        """
-        # Check Number of Qubits:
-        if n_qubits is None:
-            n_qubits = self.n_qubits
-
-        # Calculate Predictions:
-        predictions = np.array([self.qcircuit_lppc(self, params, xi) for xi in x])
-        
-        return np.mean((predictions - y) ** 2)
-
-    # ******* Original Stochastic Gradient Descent *******:
-    def stoch_grad_orig(self, opt, cost, params, x, y, learning_rate, batch_size, max_iterations,
-                      conv_tol, active_qubits=None, n_qubits=None, check_qubits=True):
-        """
-        Updates parameters using stochastic gradient descent and returns the updated parameters
-        and average cost (original version).
-        """
-        # Check Qubit Configuration:
-        if check_qubits is True:
-            # Active Qubits:
-            if active_qubits is None:
-                active_qubits = self.active_qubits
-                active_qubits = list(range(active_qubits))
-            
-            # Number of Qubits:
-            if n_qubits is None:
-                n_qubits = self.n_qubits
-        
-        # Shuffle Data:
-        permutation = np.random.permutation(len(x))
-        x = x[permutation]
-        y = y[permutation]
-
-        # Initialize Total Cost:
-        total_cost = 0
-
-        # Process each Batch:
-        for i in range(0, len(x), batch_size):
-            x_batch = x[i:i + batch_size]
-            y_batch = y[i:i + batch_size]
-
-            for n in range(max_iterations):
-                params, prev_cost = opt.step_and_cost(lambda v: cost(self, v, x_batch, y_batch),
-                                                      params)
-
-                # Compute Cost for Current Params:
-                batch_cost = cost(self, params, x_batch, y_batch)
-                total_cost += batch_cost * len(x_batch)  # Accumulate Total Cost
-
-                # Convergence Check:
-                conv = np.abs(batch_cost - prev_cost)
-                if n % 10 == 0:
-                    print(f"Step {n}: Cost function = {batch_cost:.8f}")
-
-                if conv <= conv_tol:
-                    break
-
-        # Average Total Cost over All Samples:
-        avg_cost = total_cost / len(x)
-        
-        return params, avg_cost
-
-    # ******* Original Accuracy *******:
-    def accuracy_orig(self, predictions, y):
-        """
-        Calculates the accuracy of the QCNN model on the provided testing data. Assumes
-        predictions were calculated already, not dependent on quantum circuit
-        function (original version).
-        """
-        # Calculate Number of Correct Predictions:
-        true_predictions = np.sum(predictions == y)
-
-        # Calculate Accuracy:
-        accuracy = true_predictions / len(y)
-
-        return accuracy
-    
 
 class TrainQC(DrawQC):
     """
@@ -929,7 +776,7 @@ class TrainQC(DrawQC):
 
     # ******* Compute (Label) Output Function *******:
     @jax.jit
-    def compute_out(self, self_layers, weights, weights_last, features, labels):
+    def compute_out(self_layers, weights, weights_last, features, labels):
         """
         Computes the output of the corresponding label in the QCNN model.
         """
@@ -943,20 +790,20 @@ class TrainQC(DrawQC):
         )
 
     # ******* Compute Accuracy Function *******:
-    def compute_accuracy(self, weights, weights_last, features, labels):
+    def compute_accuracy(self, self_layers, weights, weights_last, features, labels):
         """
         Computes the accuracy over the provided features and labels.
         """
-        out = self.compute_out(weights, weights_last, features, labels)
+        out = self.compute_out(self_layers, weights, weights_last, features, labels)
 
         return jnp.sum(out > 0.5) / len(out)
 
     # ******* Compute Cost Function *******:
-    def compute_cost(self, weights, weights_last, features, labels):
+    def compute_cost(self, self_layers, weights, weights_last, features, labels):
         """
         Computes the cost over the provided features and labels.
         """
-        out = self.compute_out(weights, weights_last, features, labels)
+        out = self.compute_out(self_layers, weights, weights_last, features, labels)
 
         return 1.0 - jnp.sum(out) / len(labels)
 
@@ -1141,6 +988,172 @@ class TrainQC(DrawQC):
 
         #axes[1].set_yscale('log', base=2)
         plt.show()
+
+
+# ==============================================================================================
+#                       ORIGINAL OPTIMIZATION AND TRAINING CLASS (LPPC)
+# ==============================================================================================
+
+
+class TrainLPPC(DrawLPPC):
+    """
+    Contains functions for optimization steps in a Quantum Convolutional Neural Network (QCNN).
+    It depends on the layer functions provided in the QCircuitLPPC class.
+    """
+    def __init__(self):
+        self.lppc_layers = LayersLPPC()
+        self.lppc_draw = DrawLPPC()
+        # QUBITS:
+        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
+        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
+        # ACTIVE QUBITS:
+        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
+        # WIRES:
+        self.wires = 6
+        self.n_wires = 6
+        self.num_wires = 2 # For drawings
+
+        # TRAINING:
+        self.learning_rate = 0.01
+        self.num_steps = 100
+        self.batch_size = 10
+        self.max_iteration = 100
+        self.conv_tol = 1e-06
+
+        # MEMORY:
+        self.gen_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights']  # General
+        self.batch_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights',
+                                   'batch_cost', 'total_cost']  # Batch
+        self.loss_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights',
+                                  'loss_history']  # Loss
+        self.step_size = 5
+        self.loss_history = []
+
+    
+    # -----------------------------------------------------------
+    # -----------------------------------------------------------
+    #         ORIGINAL OPTIMIZATION FUNCTIONS (LPPC)
+    # -----------------------------------------------------------
+    # -----------------------------------------------------------
+
+    
+    # ******* Select QCNN Optimizer *******:
+    def qcnn_opt_select(opt_methods=None, opt_num=None):
+        """
+        Selects and returns the desired optimizer from the given list of optimizers, based on the 
+        given value for 'opt_num'. Allows list of usable optimizers to be appended if necessary, but 
+        defaults to a list of optimizers including the Stochastic Gradient Descent (SGD) Optimizer, 
+        the ADAM Optimizer, RMS Prop Optimizer, and more (6 total, using PennyLane). 
+        Raises "ValueError: If opt_num is not 1, 2, or 3".
+
+        Note: In "qc_opt_list()", "opt_methods" is a list of optimizer options with string versions of
+        their associated names, and not actual optimizers themselves. The actual optimizers are 
+        instantiated with "opt_methods" in the function "qc_opt_select()".
+        """
+        # List of Available Optimizers (SIX total):
+        if opt_methods is None:
+            opt_methods = {
+                1: qml.GradientDescentOptimizer(),
+                2: qml.AdamOptimizer(),
+                3: qml.RMSPropOptimizer(),
+                4: qml.MomentumOptimizer(),
+                5: qml.NesterovMomentumOptimizer(),
+                6: qml.AdagradOptimizer(),
+            }
+            # Instantiate Default Optimizer (Gradient Descent):
+            if opt_num is None:
+                # Returns 'GradientDescentOptimizer' if No Selection is Made:
+                return qml.GradientDescentOptimizer()
+
+        if opt_num not in opt_methods:
+            raise ValueError("opt_num must be equal to an integer value 1-6. for default. Use 'qc_opt_print' to check full list.")
+
+        # Get Optimizer Selection:
+        opt = opt_methods.get(opt_num)
+
+        return opt
+
+    # ******* Original Mean Squared Error Cost *******:
+    def mse_cost(self, params, x, y, n_qubits=None):
+        """
+        Computes the Mean Squared Error (MSE) cost function (Note: Specifically 
+        calculates the MSE for the updated version of the LPPC QCNN V2).
+        """
+        # Check Number of Qubits:
+        if n_qubits is None:
+            n_qubits = self.n_qubits
+
+        # Calculate Predictions:
+        predictions = np.array([self.qcircuit_lppc(self, params, xi) for xi in x])
+        
+        return np.mean((predictions - y) ** 2)
+
+    # ******* Original Stochastic Gradient Descent *******:
+    def stoch_grad_orig(self, opt, cost, params, x, y, learning_rate, batch_size, max_iterations,
+                      conv_tol, active_qubits=None, n_qubits=None, check_qubits=True):
+        """
+        Updates parameters using stochastic gradient descent and returns the updated parameters
+        and average cost (original version).
+        """
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Active Qubits:
+            if active_qubits is None:
+                active_qubits = self.active_qubits
+                active_qubits = list(range(active_qubits))
+            
+            # Number of Qubits:
+            if n_qubits is None:
+                n_qubits = self.n_qubits
+        
+        # Shuffle Data:
+        permutation = np.random.permutation(len(x))
+        x = x[permutation]
+        y = y[permutation]
+
+        # Initialize Total Cost:
+        total_cost = 0
+
+        # Process each Batch:
+        for i in range(0, len(x), batch_size):
+            x_batch = x[i:i + batch_size]
+            y_batch = y[i:i + batch_size]
+
+            for n in range(max_iterations):
+                params, prev_cost = opt.step_and_cost(lambda v: cost(self, v, x_batch, y_batch),
+                                                      params)
+
+                # Compute Cost for Current Params:
+                batch_cost = cost(self, params, x_batch, y_batch)
+                total_cost += batch_cost * len(x_batch)  # Accumulate Total Cost
+
+                # Convergence Check:
+                conv = np.abs(batch_cost - prev_cost)
+                if n % 10 == 0:
+                    print(f"Step {n}: Cost function = {batch_cost:.8f}")
+
+                if conv <= conv_tol:
+                    break
+
+        # Average Total Cost over All Samples:
+        avg_cost = total_cost / len(x)
+        
+        return params, avg_cost
+
+    # ******* Original Accuracy *******:
+    def accuracy_orig(self, predictions, y):
+        """
+        Calculates the accuracy of the QCNN model on the provided testing data. Assumes
+        predictions were calculated already, not dependent on quantum circuit
+        function (original version).
+        """
+        # Calculate Number of Correct Predictions:
+        true_predictions = np.sum(predictions == y)
+
+        # Calculate Accuracy:
+        accuracy = true_predictions / len(y)
+
+        return accuracy
 
 
 # **********************************************************************************************

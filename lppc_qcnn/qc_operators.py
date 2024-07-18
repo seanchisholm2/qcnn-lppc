@@ -16,9 +16,10 @@ import jax;
 # JAX CONFIGURATIONS:
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
+
 import jax.numpy as jnp
-import jax.experimental.sparse as jsp # (NOT ACCESSED)
-import jax.scipy.linalg as jsl # (NOT ACCESSED)
+import jax.experimental.sparse as jsp
+import jax.scipy.linalg as jsl
 
 # TensorFlow (FOR DATA):
 # import tensorflow as tf
@@ -55,7 +56,7 @@ class QuantumMathOps():
 
 
     # ******* Basis Matrix *******:
-    def b_mat(self, i, j, n):
+    def b_mat(i, j, n):
         """
         Generates an n x n matrix of 0s with the i,j th entry is a one.
         This is the i,j th basis vector on the space of n x n real matrices.
@@ -108,7 +109,7 @@ class QuantumMathOps():
         return gm_matrices
 
     # ******* Convolutional Operator *******:
-    def get_conv_op(self, mats, params):
+    def get_conv_op(mats, params):
         """
         Parametrizes the convolutional operator according to Gell-Mann matrices scaled by 
         trainable parameters, this method generates the relevant applicable operator.
@@ -119,15 +120,17 @@ class QuantumMathOps():
         
         return jsl.expm(complex(0, -1) * final)
 
-    # ******* Controlled Pool Operator *******:
-    def controlled_pool(self, mat):
+    # ******* Controlled Pool Operator (with NumPy) *******:
+    def controlled_pool_numpy(mat):
         """
-        Generates the matrix corresponding the controlled - mat operator. Inputs Numpy array,
-        shape (2x2) for the controlled operator and returns the final controlled-mat operator.
+        Generates the matrix corresponding the controlled - mat operator using NumPy. Inputs 
+        Numpy array, shape (2x2) for the controlled operator and returns the final 
+        controlled-mat operator (LPPC).
         """
         i_hat = np.array([[1.0, 0.0], [0.0, 0.0]])
         j_hat = np.array([[0.0, 0.0], [0.0, 1.0]])
         identity = i_hat + j_hat
+
         return np.kron(i_hat, identity) + np.kron(j_hat, mat)
     
 
@@ -137,6 +140,18 @@ class QuantumMathOps():
     # -----------------------------------------------------------
     # -----------------------------------------------------------
 
+    
+    # ******* Controlled Pool Operator *******:
+    def controlled_pool(mat):
+        """
+        Generates the matrix corresponding to the controlled-mat operator. Inputs JAX array,
+        shape (2x2) for the controlled operator and returns the final controlled-mat operator.
+        """
+        i_hat = jnp.array([[1.0, 0.0], [0.0, 0.0]])
+        j_hat = jnp.array([[0.0, 0.0], [0.0, 1.0]])
+        identity = i_hat + j_hat
+
+        return jnp.kron(i_hat, identity) + jnp.kron(j_hat, mat)
     
     # ******* Uniformly Controlled Rotation Function *******:
     def generate_uniformly_controlled_rotation(self, params, control_qubit_indicies,
@@ -170,13 +185,18 @@ class QuantumMathOps():
                     break
 
 
+# ==============================================================================================
+#                              NEW QUANTUM OPERATOR FUNCTIONS
+# ==============================================================================================
+
+
 class PenguinsQMO():
     """
     Class that contains custom quantum computing operators, relevant mathematical constructs,
     qubit functions, and other related operations (LPPC).
     """
     def __init__(self):
-        self.qm_ops = QuantumMathOps()
+        self.qmo = QuantumMathOps()
         # QUBITS:
         self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
         self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
@@ -190,13 +210,13 @@ class PenguinsQMO():
     
     # -----------------------------------------------------------
     # -----------------------------------------------------------
-    #             QUANTUM OPERATOR FUNCTIONS (LPPC)
+    #         ORIGINAL QUANTUM OPERATOR FUNCTIONS (LPPC)
     # -----------------------------------------------------------
     # -----------------------------------------------------------
 
 
     # ******* General Rotation Gate (lppc) *******:
-    def GRot_lppc(self, params, wire):
+    def GRot_lppc(params, wire):
         """
         General Rotation Gate to a given Qubit (original version).
         """
@@ -204,7 +224,7 @@ class PenguinsQMO():
         # return qml.expval(qml.PauliZ(wire))
 
     # ******* Typecasting Weights Function (lppc) *******:
-    def typecast_weights_lppc(self, params):
+    def typecast_weights_lppc(params):
         """
         Transforms the parameters to a Torch tensor of type 'complex128' with 
         'requires_grad' set to 'True' (original version).
@@ -216,16 +236,11 @@ class PenguinsQMO():
         return params
 
     # ******* Broadcasting Weights Function (lppc) *******:
-    def broadcast_weights_lppc(self, params, n_qubits=None, check_qubits=True):
+    def broadcast_weights_lppc(params):
         """
         Transforms the weights into the appropriate broadcasting form for the given
         number of qubits (original version).
         """
-        # Check Qubit Configuration:
-        if check_qubits is True:
-            # Number of Qubits:
-            if n_qubits is None:
-                n_qubits = self.n_qubits
             
         params_flat = params.reshape(-1)
         # params = np.array(params, requires_grad=True)
