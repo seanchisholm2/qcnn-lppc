@@ -2,21 +2,48 @@
 
 ### IMPORTS / DEPENDENCIES:
 
+# PLOTTING:
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+# JAX:
+import jax;
+# JAX CONFIGURATIONS:
+jax.config.update('jax_platform_name', 'cpu')
+jax.config.update("jax_enable_x64", True)
+import jax.numpy as jnp
+import jax.experimental.sparse as jsp # (NOT ACCESSED)
+import jax.scipy.linalg as jsl # (NOT ACCESSED)
+
 # PennyLane:
-import pennylane as qml
+import pennylane as qml # (NOT ACCESSED)
 from pennylane import numpy as np
+
+# DATA:
+# from sklearn import datasets
 
 # TorchVision (FOR DATA):
 import torch
-from torchvision import datasets, transforms  # (NOT ACCESSED)
-from torch.utils.data import DataLoader  # (NOT ACCESSED)
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
 
 # TensorFlow (FOR DATA):
 # import tensorflow as tf
 # from tensorflow.keras.datasets import mnist
 
-# Package:
-# from .operators import QuantumMathOps as qmo
+# PACKAGE(S):
+# # *****************************************************************************
+# OPERATORS.PY:
+# from .qc_operators import QuantumMathOps as qmath_ops # QuantumMathOps() Class
+# from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO() Class
+# Example Usage(s) (Instance Method):
+# -> QuantumMathOps():
+#       qmo_obj = qmath_ops
+#       qmo_obj.sample_function(*args, **kwargs)
+# -> PeguinsQMO():
+#       lppc_qmo_obj = lppc_qmo
+#       lppc_qmo_obj.sample_function(*args, **kwargs)
+# # *****************************************************************************
 
 
 # ==============================================================================================
@@ -27,12 +54,16 @@ from torch.utils.data import DataLoader  # (NOT ACCESSED)
 class LoadDataLPPC:
     """
     Class for loading and processing MNIST data for quantum convolutional neural networks. Class
-    functions originating from original QCNN package.
+    functions originating from original QCNN package (LPPC).
     """
 
+
     # -----------------------------------------------------------
-    #       QC AND MNIST DATA LOADING FUNCTIONS (LPPC)
     # -----------------------------------------------------------
+    #    ORIGINAL QC AND MNIST DATA LOADING FUNCTIONS (LPPC)
+    # -----------------------------------------------------------
+    # -----------------------------------------------------------
+
     
     # ******* Loading MNIST Data Function (TensorFlow) *******:
     @staticmethod
@@ -41,7 +72,8 @@ class LoadDataLPPC:
         Loads the MNIST dataset and returns training and testing images and 
         labels, using TensorFlow.
         """
-        # Load MNIST dataset using TensorFlow:
+        # Load MNIST dataset using TensorFlow
+        # (Note: Uncomment TensorFlow (FOR DATA) in above imports to use 'mnist'):
         (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
         
         # *Note*: This function uses TensorFlow to import the MNIST dataset, which is 
@@ -165,11 +197,74 @@ class LoadDataLPPC:
 
 class LoadDataQC:
     """
-    New class for loading and processing MNIST data for quantum convolutional neural networks, as well
-    as generating random sample data for use in QCNN.
+    New class for loading and processing MNIST data for quantum convolutional neural networks, as
+    well as generating random sample data for use in QCNN.
     """
     # ***** IMPORT LoadDataLPPC() CLASS *****:
     data_lppc = LoadDataLPPC()
+
+    
+    # -----------------------------------------------------------
+    # -----------------------------------------------------------
+    #         DATA AND LOADING FUNCTIONS (NEW/ESSENTIAL)
+    # -----------------------------------------------------------
+    # -----------------------------------------------------------
+
+
+    # ******* Visualizing Data Function *******:
+    @staticmethod
+    def draw_mnist_data():
+        """
+        Loads the MNIST digits dataset, filters the images and labels for digits 0 and 1,
+        and displays the first 12 images in a 1x12 grid.
+        """
+        digits = datasets.load_digits()
+        images, labels = digits.data, digits.target
+
+        images = images[np.where((labels == 0) | (labels == 1))]
+        labels = labels[np.where((labels == 0) | (labels == 1))]
+
+        fig, axes = plt.subplots(nrows=1, ncols=12, figsize=(3, 1))
+
+        for i, ax in enumerate(axes.flatten()):
+            ax.imshow(images[i].reshape((8, 8)), cmap="gray")
+            ax.axis("off")
+
+        plt.tight_layout()
+        plt.subplots_adjust(wspace=0, hspace=0)
+        plt.show()
+
+    # ******* Loading Digits Data Function *******:
+    @staticmethod
+    def load_digits_data(num_train, num_test, rng):
+        """
+        Return training and testing data of digits dataset.
+        """
+        digits = datasets.load_digits()
+        features, labels = digits.data, digits.target
+
+        # Only use first two classes:
+        features = features[np.where((labels == 0) | (labels == 1))]
+        labels = labels[np.where((labels == 0) | (labels == 1))]
+
+        # Normalize data:
+        features = features / np.linalg.norm(features, axis=1).reshape((-1, 1))
+
+        # Subsample train and test split:
+        train_indices = rng.choice(len(labels), num_train, replace=False)
+        test_indices = rng.choice(
+            np.setdiff1d(range(len(labels)), train_indices), num_test, replace=False
+        )
+
+        x_train, y_train = features[train_indices], labels[train_indices]
+        x_test, y_test = features[test_indices], labels[test_indices]
+
+        return (
+            jnp.asarray(x_train),
+            jnp.asarray(y_train),
+            jnp.asarray(x_test),
+            jnp.asarray(y_test),
+        )
 
     # ******* Sample Quantum Circuit Data Function *******:
     @staticmethod
@@ -177,17 +272,7 @@ class LoadDataQC:
         """
         Generates sample data for QCNN.
         """
-        # TODO
-
-        return None
-    
-    # ******* TO-DO *******:
-    @staticmethod
-    def todo():
-        """
-        FILL.
-        """
-        # TO-DO
+        # TO-DO: Implement this function
 
         return None
 

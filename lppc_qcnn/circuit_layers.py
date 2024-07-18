@@ -2,45 +2,376 @@
 
 ### IMPORTS / DEPENDENCIES:
 
-# PennyLane:
+# PLOTTING:
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+# PENNYLANE:
 import pennylane as qml
-from pennylane import numpy as np
+import pennylane.numpy as pnp
 
-# TorchVision (FOR DATA):
-import torch
-from torchvision import datasets, transforms  # (NOT ACCESSED)
-from torch.utils.data import DataLoader  # (NOT ACCESSED)
+# DATA:
+import numpy as np
+import pandas as pd
+import seaborn as sns
 
-# TensorFlow (FOR DATA):
-# import tensorflow as tf
-# from tensorflow.keras.datasets import mnist
+# JAX:
+import jax;
+# JAX CONFIGURATIONS:
+jax.config.update('jax_platform_name', 'cpu')
+jax.config.update("jax_enable_x64", True)
+import jax.numpy as jnp
+import jax.experimental.sparse as jsp # (NOT ACCESSED)
+import jax.scipy.linalg as jsl # (NOT ACCESSED)
 
-# Package:
-# from .operators import QuantumMathOps as qmo
+import optax  # (Optimization using Jax)
+
+# OTHER:
+import numpy as np
+sns.set()
+seed = 0
+rng = np.random.default_rng(seed=seed)
+
+# PACKAGE(S):
+# *****************************************************************************
+# *1* OPERATORS.PY:
+from .qc_operators import QuantumMathOps as qmath_ops # QuantumMathOps() Class
+from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO() Class
+# Example Usage(s) (Instance Method):
+# -> QuantumMathOps():
+#       qmo_obj = qmath_ops
+#       qmo_obj.sample_function(*args, **kwargs)
+# -> PeguinsQMO():
+#       lppc_qmo_obj = lppc_qmo
+#       lppc_qmo_obj.sample_function(*args, **kwargs)
+#
+# *2* LOAD_QC_DATA.PY:
+from .load_qc_data import LoadDataLPPC # (STATIC METHOD)
+from .load_qc_data import LoadDataQC # (STATIC METHOD)
+# Example Usage(s) (Static Method):
+#  -> LoadDataLPPC():
+#       LoadDataLPPC.example_function(*args, **kwargs)
+#  -> LoadDataQC():
+#       LoadDataQC.sample_function(*args, **kwargs)
+# *****************************************************************************
 
 
 # ==============================================================================================
-#                                      QCNN LAYERS CLASS
+#                                      QCNN LAYERS CLASS(ES)
 # ==============================================================================================
 
 
 class LayersQC:
     """
-    Contains all relevant circuit and layer functions for the quantum convolutional neural network.
+    Contains all relevant circuit and layer functions for the quantum convolutional neural
+    network (LPPC).
     """
+    # DEVICE:
+    device = qml.device("default.qubit", wires=6)
+
     def __init__(self):
+        # QUANTUM-MATH-OPS:
+        self.qmo = qmath_ops
         # QUBITS:
         self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
         self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
         # ACTIVE QUBITS:
         self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
         # WIRES:
-        self.num_wires = 2
         self.wires = 6
+        self.n_wires = 6
+        self.num_wires = 6
+        self.n_wires_draw = 2 # (For drawings)
     
+    
+    # -----------------------------------------------------------
+    # -----------------------------------------------------------
+    #       CIRCUIT AND LAYER FUNCTIONS (NEW/ESSENTIAL)
+    # -----------------------------------------------------------
+    # -----------------------------------------------------------
+
+
+    # ******* Convolutional Layer *******:
+    def convolutional_layer(self, weights, wires, skip_first_layer=True):
+        """
+        Adds a convolutional layer to a circuit.
+
+        Args:
+            -> weights (np.array): 1D array with 15 weights of the parametrized gates.
+            -> wires (list[int]): Wires where the convolutional layer acts on.
+            -> skip_first_layer (bool): Skips the first two U3 gates of a layer.
+        """
+        # Check Wires:
+        if wires is None:
+            wires = self.wires
+        
+        # Check Number of Wires:
+        n_wires = len(wires)
+        assert n_wires >= 3, "this circuit is too small!"
+
+        for p in [0, 1]:
+            for indx, w in enumerate(wires):
+                if indx % 2 == p and indx < n_wires - 1:
+                    if indx % 2 == 0 and not skip_first_layer:
+                        qml.U3(*weights[:3], wires=[w])
+                        qml.U3(*weights[3:6], wires=[wires[indx + 1]])
+                    qml.IsingXX(weights[6], wires=[w, wires[indx + 1]])
+                    qml.IsingYY(weights[7], wires=[w, wires[indx + 1]])
+                    qml.IsingZZ(weights[8], wires=[w, wires[indx + 1]])
+                    qml.U3(*weights[9:12], wires=[w])
+                    qml.U3(*weights[12:], wires=[wires[indx + 1]])
+
+    # ******* Pooling Layer *******:
+    def pooling_layer(self, weights, wires):
+        """
+        Adds a pooling layer to a circuit.
+
+        Args:
+            -> weights (np.array): Array with the weights of the conditional U3 gate.
+            -> wires (list[int]): List of wires to apply the pooling layer on.
+        """
+        # Check Wires:
+        if wires is None:
+            wires = self.wires
+        
+        # Check Number of Wires:
+        n_wires = len(wires)
+        assert len(wires) >= 2, "this circuit is too small!"
+
+        for indx, w in enumerate(wires):
+            if indx % 2 == 1 and indx < n_wires:
+                m_outcome = qml.measure(w)
+                #qml.cond applies U3 only if m_outcome == 1 
+                # if m_outcome == 1:
+                #     qml.U3(*weights, wires=wires[indx - 1])
+
+                qml.cond(m_outcome, qml.U3)(*weights, wires=wires[indx - 1])
+
+    # ******* Four-Qubit Unitary Convolutional Layer *******:
+    def four_conv_layer(self, params, active_qubits, barrier=True):
+        """
+        Adds a four-qubit unitary convolutional layer to a circuit.
+
+        Args:
+            -> params (np.array): Array with the parameters for the convolutional operations.
+            -> active_qubits (list[int]): List of active qubits to apply the convolutional layer on.
+            -> barrier (bool): Whether to add a barrier after the operations.
+        """
+        conv_operators = self.qmo.generate_gell_mann(self.qmo, 4)  # 2 qubit gell mann matricies
+        u_conv = self.qmo.get_conv_op(self.qmo, conv_operators, params)  
+
+        start_index = 0 
+        index = start_index
+
+        while index + 3 < len(active_qubits):
+            q_index = active_qubits[index] # (Q: Use 'active_qubits' or 'self.active_qubits'?)
+            q_index_1 = active_qubits[index + 1]
+            q_index_2 = active_qubits[index + 2]
+            q_index_3 = active_qubits[index + 3]
+
+
+            qml.QubitUnitary(u_conv, [q_index, q_index_1])
+            qml.QubitUnitary(u_conv, [q_index, q_index_3])
+            qml.QubitUnitary(u_conv, [q_index, q_index_2])
+            qml.QubitUnitary(u_conv, [q_index_1, q_index_3])
+            qml.QubitUnitary(u_conv, [q_index_1, q_index_2])
+            qml.QubitUnitary(u_conv, [q_index_2, q_index_3])
+            
+            qml.Barrier()
+
+            if index == 0:
+                index += 2
+            else:
+                index += 3
+
+        if barrier:
+            qml.Barrier()
+
+    # ******* Three-Qubit Unitary Convolutional Layer *******:
+    def three_conv_layer(self, params, active_qubits, barrier=True):
+        """
+        Adds a three-qubit unitary convolutional layer to a circuit.
+
+        Args:
+            -> params (np.array): Array with the parameters for the convolutional operations.
+            -> active_qubits (list[int]): List of active qubits to apply the convolutional layer on.
+            -> barrier (bool): Whether to add a barrier after the operations.
+        """
+        conv_operators = self.qmo.generate_gell_mann(self.qmo, 8)  # 3 qubit operators
+        u_conv = self.qmo.get_conv_op(self.qmo, conv_operators, params) # params = 63 (?)
+
+        start_index = 0 
+        index = start_index
+
+        while index + 2 < len(active_qubits):
+            q_index = active_qubits[index]
+            q_index_1 = active_qubits[index + 1]
+            q_index_2 = active_qubits[index + 2]
+
+            qml.QubitUnitary(u_conv, [q_index, q_index_1, q_index_2])
+            index += 3
+
+        if barrier:
+            qml.Barrier()
+
+    # ******* Custom Convolutional Layer *******:
+    def custom_conv_layer(self, params, active_qubits, barrier=True):
+
+        start_index = 0 
+        index = start_index
+        # (3 qubit convolutions)
+        group_size = 2
+
+        while index + (group_size - 1) < len(active_qubits):
+            param_pointer = 0
+            lst_indicies = range(index, index + group_size)
+                # z,y ascending loop
+            for axis in ['z', 'y']:
+                split_index = group_size - 1
+                while split_index > 0:
+                    control_indicies = lst_indicies[:split_index]
+                    control_qubit_indicies = [active_qubits[i] for i in control_indicies]
+                    target_qubit_index = active_qubits[lst_indicies[split_index]]
+
+                    num_local_params = 2**(len(control_qubit_indicies))
+                    local_params = params[param_pointer:param_pointer + num_local_params]
+                    param_pointer += num_local_params
+
+                    self.qmo.generate_uniformly_controlled_rotation(self.qmo, local_params,
+                                                    control_qubit_indicies, target_qubit_index, axis=axis)
+
+                    split_index -= 1
+
+                if axis == 'z':
+                    qml.RZ(params[param_pointer], active_qubits[lst_indicies[split_index]])
+                else:
+                    qml.RY(params[param_pointer], active_qubits[lst_indicies[split_index]])
+                param_pointer += 1
+
+            # descending loop
+            for axis in ['y', 'z']:
+                split_index = 1
+
+                if axis == 'z':
+                    qml.RZ(params[param_pointer], active_qubits[lst_indicies[split_index-1]])
+                    param_pointer += 1
+
+                while split_index < group_size:
+                    control_indicies = lst_indicies[:split_index]
+                    control_qubit_indicies = [active_qubits[i] for i in control_indicies]
+                    target_qubit_index = active_qubits[lst_indicies[split_index]]
+
+                    num_local_params = 2**(len(control_qubit_indicies))
+                    local_params = params[param_pointer:param_pointer + num_local_params]
+                    param_pointer += num_local_params
+
+                    # (Q: Where does kwarg 'label=label' come from? Removed for now)
+                    self.qmo.generate_uniformly_controlled_rotation(self.qmo, local_params,
+                                                    control_qubit_indicies, target_qubit_index, axis=axis)
+
+                    split_index += 1
+
+            index += group_size
+
+        if barrier:
+            qml.Barrier()
+
+    # ******* Convolutional and Pooling Layer *******:
+    def conv_and_pooling(self, kernel_weights, n_wires, skip_first_layer=True):
+        """
+        Applies both the convolutional and pooling layer.
+        """
+        # Check Number of Wires ('n_wires'):
+        if n_wires is None:
+            wires = self.n_wires
+
+        if skip_first_layer: 
+            self.three_conv_layer(kernel_weights[15:78], n_wires, barrier=True)  
+        else: 
+            self.four_conv_layer(kernel_weights[:15], n_wires, barrier=True)
+            self.three_conv_layer(kernel_weights[15:78], n_wires, barrier=True)
+
+        # self.convolutional_layer(kernel_weights[:15], n_wires, skip_first_layer=skip_first_layer)
+        self.pooling_layer(kernel_weights[78:], n_wires)
+
+    # ******* Dense Layer *******:
+    def dense_layer(self, weights, wires):
+        """
+        Applies an arbitrary unitary gate to a specified set of wires.
+        """
+        # Check Wires:
+        if wires is None:
+            wires = self.wires
+
+        # Generate Gell-Mann matrices for vector space:
+        fc_mats = self.qmo.generate_gell_mann(self.qmo, (2**len(wires)))
+        fc_op = self.qmo.get_conv_op(self.qmo, fc_mats, weights)
+
+        # Apply Fully Connected Operator to active qubits:
+        qml.QubitUnitary(fc_op, wires=wires)
+
+    # ******* Quantum Convolutional Network *******:
+    @qml.qnode(device)
+    def conv_net(self, weights, last_layer_weights, features):
+        """
+        Defines the QCNN circuit.
+        
+        Args:
+            weights (np.array): Parameters of the convolution and pool layers.
+            last_layer_weights (np.array): Parameters of the last dense layer.
+            features (np.array): Input data to be embedded using AmplitudeEmbedding.
+        """
+
+        layers = weights.shape[1]
+        wires = list(range(self.num_wires))
+
+        # inputs the state input_state
+        qml.AmplitudeEmbedding(features=features, wires=wires, pad_with=0.5)
+        qml.Barrier(wires=wires, only_visual=True)
+
+        # adds convolutional and pooling layers
+        for j in range(layers):
+            self.conv_and_pooling(weights[:, j], wires, skip_first_layer=(not j == 0))
+            wires = wires[::2]
+            qml.Barrier(wires=wires, only_visual=True)
+
+        assert last_layer_weights.size == 4 ** (len(wires)) - 1, (
+            "The size of the last layer weights vector is incorrect!"
+            f" \n Expected {4 ** (len(wires)) - 1}, Given {last_layer_weights.size}"
+        )
+        self.dense_layer(last_layer_weights, wires)
+        return qml.probs(wires=(0))
+
+
+class LayersLPPC:
+    """
+    Contains all relevant circuit and layer functions for the quantum convolutional neural
+    network (LPPC).
+    """
+    # DEVICE:
+    device = qml.device("default.qubit", wires=6)
+
+    def __init__(self):
+        # QUANTUM-MATH-OPS:
+        self.qmo = qmath_ops
+        # QUBITS:
+        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
+        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
+        # ACTIVE QUBITS:
+        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
+        # WIRES:
+        self.wires = 6
+        self.n_wires = 6
+        self.num_wires = 6
+        self.n_wires_draw = 2 # (For drawings)
+    
+    
+    # -----------------------------------------------------------
     # -----------------------------------------------------------
     #        ORIGINAL CIRCUIT AND LAYER FUNCTIONS (LPPC)
     # -----------------------------------------------------------
+    # -----------------------------------------------------------
+
 
     # ******* Original Convolutional Layer *******:
     def conv_layer_orig(self, weights, active_qubits, n_qubits=None,
@@ -55,7 +386,7 @@ class LayersQC:
                 n_qubits = self.n_qubits
 
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
-        pool_operators = gell_ops.generate_gell_mann(gell_ops, (2**n_qubits))
+        pool_operators = self.qmo.generate_gell_mann(self.qmo, (2**n_qubits))
 
         # Loop over all active qubits (in pairs):
         index = 0
@@ -64,7 +395,7 @@ class LayersQC:
             q2 = active_qubits[index+1] # Second qubit
 
             # Get Convolutional Operator 'v_conv' from 'get_conv_op' and weights:
-            v_conv = gell_ops.get_conv_op(gell_ops,
+            v_conv = self.qmo.get_conv_op(self.qmo,
                                                pool_operators, weights[index])  # V -> Conv. Operator
             
             # Apply Controlled Unitary Operation with convolutional operator:
@@ -86,7 +417,7 @@ class LayersQC:
                 n_qubits = self.n_qubits
         
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
-        pool_operators = gell_ops.generate_gell_mann(gell_ops, 2**len(n_qubits))
+        pool_operators = self.qmo.generate_gell_mann(self.qmo, 2**len(n_qubits))
 
         # Loop over all active qubits (in pairs):
         index = 0
@@ -96,15 +427,15 @@ class LayersQC:
 
             # Get convolutional operators V1 and V2 from pool operators and weights:
             # V1 -> First set of weights
-            v1 = gell_ops.get_conv_op(gell_ops,
+            v1 = self.qmo.get_conv_op(self.qmo,
                                            pool_operators, weights[index])
             # V2 -> Second set of weights
-            v2 = gell_ops.get_conv_op(gell_ops,
+            v2 = self.qmo.get_conv_op(self.qmo,
                                            pool_operators, weights[index+1])
             
             # Get convolutional operators "V1_pool" and "v2_pool" from pool operators and weights:
-            v1_pool = gell_ops.controlled_pool(gell_ops, v1)
-            v2_pool = gell_ops.controlled_pool(gell_ops, v2)
+            v1_pool = self.qmo.controlled_pool(self.qmo, v1)
+            v2_pool = self.qmo.controlled_pool(self.qmo, v2)
 
             # Apply Hadamard Gate to first qubit:
             qml.Hadamard(wires=q1)
@@ -157,8 +488,8 @@ class LayersQC:
                 n_qubits = self.n_qubits
         
         # Generate Gell-Mann matrices for vector space:
-        fc_mats = gell_ops.generate_gell_mann(gell_ops, 2**len(n_qubits))
-        fc_op = gell_ops.get_conv_op(gell_ops, fc_mats, params)
+        fc_mats = self.qmo.generate_gell_mann(self.qmo, (2**len(n_qubits)))
+        fc_op = self.qmo.get_conv_op(self.qmo, fc_mats, params)
 
         # Apply Fully Connected Operator to active qubits:
         qml.QubitUnitary(fc_op, wires=active_qubits)
@@ -205,22 +536,10 @@ class LayersQC:
         middle_qubit = active_qubits[len(active_qubits) // 2]
         
         return qml.expval(qml.PauliZ(middle_qubit))
-    
-    # -----------------------------------------------------------
-    #             NEW CIRCUIT AND LAYER FUNCTIONS
-    # -----------------------------------------------------------
-
-    def todo():
-        """
-        FILL.
-        """
-        # TO-DO
-
-        return None
 
 
 # =============================================================================================
-#                                    CIRCUIT DRAWING CLASS
+#                                    CIRCUIT DRAWING CLASS(ES)
 # =============================================================================================
 
 
@@ -233,19 +552,63 @@ class DrawQC(LayersQC):
     none is specified.
     """
     def __init__(self):
-        self.layers = LayersQC()
+        self.qc_layers = LayersQC()
         # QUBITS:
         self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
         self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
         # ACTIVE QUBITS:
         self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
         # WIRES:
-        self.num_wires = 2
         self.wires = 6
+        self.n_wires = 6
+        self.num_wires = 6
+        self.n_wires_draw = 2 # (For drawings)
 
+    
+    # -----------------------------------------------------------
+    # -----------------------------------------------------------
+    #             DRAWING FUNCTIONS (NEW/ESSENTIAL)
+    # -----------------------------------------------------------
+    # -----------------------------------------------------------
+
+
+    # ******* TO-DO *******:
+    def todo_qc_draw():
+        """
+        Placeholder function for future implementation.
+        """
+        # TO-DO: Implement this function
+
+        pass
+
+
+class DrawLPPC(LayersLPPC):
+    """
+    Contains functions for drawing different layer functions relevant to the
+    quantum convolutional neural network, including convolutional layers, pooling layers,
+    fully connected layers, and quantum circuits. Defaults to a 2-Qubit representation of
+    each layer, as well as defaulting to the most recent version of each layer function if
+    none is specified (LPPC).
+    """
+    def __init__(self):
+        self.lppc_layers = LayersLPPC()
+        # QUBITS:
+        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
+        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
+        # ACTIVE QUBITS:
+        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
+        # WIRES:
+        self.wires = 6
+        self.n_wires = 6
+        self.num_wires = 2 # For drawings
+
+    
+    # -----------------------------------------------------------
     # -----------------------------------------------------------
     #            ORIGINAL DRAWING FUNCTIONS (LPPC)
     # -----------------------------------------------------------
+    # -----------------------------------------------------------
+
 
     # ******* Original Pooling Layer Drawing *******:
     def draw_pool_lppc(self, params, x, active_qubits=None, n_qubits=None,
@@ -357,26 +720,27 @@ class DrawQC(LayersQC):
 
 
 # ==============================================================================================
-#                               OPTIMIZATION AND TRAINING CLASS
+#                             OPTIMIZATION AND TRAINING CLASS(ES)
 # ==============================================================================================
 
 
-class TrainQC(DrawQC):
+class TrainLPPC(DrawLPPC):
     """
     Contains functions for optimization steps in a Quantum Convolutional Neural Network (QCNN).
     It depends on the layer functions provided in the QCircuitLPPC class.
     """
     def __init__(self):
-        self.layers = LayersQC()
-        self.qc_draw = DrawQC()
+        self.lppc_layers = LayersLPPC()
+        self.lppc_draw = DrawLPPC()
         # QUBITS:
         self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
         self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
         # ACTIVE QUBITS:
         self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
         # WIRES:
-        self.num_wires = 2
         self.wires = 6
+        self.n_wires = 6
+        self.num_wires = 2 # For drawings
 
         # TRAINING:
         self.learning_rate = 0.01
@@ -394,9 +758,13 @@ class TrainQC(DrawQC):
         self.step_size = 5
         self.loss_history = []
 
+    
+    # -----------------------------------------------------------
     # -----------------------------------------------------------
     #         ORIGINAL OPTIMIZATION FUNCTIONS (LPPC)
     # -----------------------------------------------------------
+    # -----------------------------------------------------------
+
     
     # ******* Select QCNN Optimizer *******:
     def qcnn_opt_select(self, opt_methods=None, opt_num=None):
@@ -433,35 +801,6 @@ class TrainQC(DrawQC):
         opt = opt_methods.get(opt_num)
 
         return opt
-
-    # ******* List Available QCNN Optimizers *******:
-    def qcnn_opt_list(self):
-        """
-        Prints the list of optimizer options and their associated 'opt_num' values. Allows list of 
-        usable optimizers to be appended if necessary, but defaults to a list of optimizers including
-        the Stochastic Gradient Descent (SGD) Optimizer, the ADAM Optimizer, RMS Prop Optimizer, 
-        and more (6 total, using PennyLane). 
-        
-        Note: In "qc_opt_list()", "opt_names" is a list of optimizer options with string versions of
-        their associated names, and not actual optimizers themselves. The actual optimizers are 
-        instantiated with "opt_methods" in the function "qc_opt_select()".
-        """
-        # List of potential optimizers (SIX total):
-        opt_names = {
-            1: "GradientDescentOptimizer",
-            2: "AdamOptimizer",
-            3: "RMSPropOptimizer",
-            4: "MomentumOptimizer",
-            5: "NesterovMomentumOptimizer",
-            6: "AdagradOptimizer"
-        }
-
-        # Print Available Optimizers:
-        print("Available Optimizer Options:")
-        print("-------")
-        for num, name in opt_names.items():
-            print(f"{num}: {name}")
-            print("-------")
 
     # ******* Original Mean Squared Error Cost *******:
     def mse_cost(self, params, x, y, n_qubits=None):
@@ -545,18 +884,263 @@ class TrainQC(DrawQC):
 
         return accuracy
     
+
+class TrainQC(DrawQC):
+    """
+    Contains functions for optimization steps in a Quantum Convolutional Neural Network (QCNN).
+    It depends on the layer functions provided in the QCircuitLPPC class.
+    """
+    def __init__(self):
+        self.qc_layers = LayersQC()
+        self.qc_draw = DrawQC()
+        # QUBITS:
+        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
+        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
+        # ACTIVE QUBITS:
+        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
+        # WIRES:
+        self.wires = 6
+        self.n_wires = 6
+        self.num_wires = 2 # For drawings
+
+        # TRAINING:
+        self.learning_rate = 0.01
+        self.num_steps = 100
+        self.batch_size = 10
+        self.max_iteration = 100
+        self.conv_tol = 1e-06
+
+        # MEMORY:
+        self.gen_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights']  # General
+        self.batch_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights',
+                                'batch_cost', 'total_cost']  # Batch
+        self.loss_vars_toCheck = ['x_train', 'x_test', 'y_train', 'y_test', 'qcnn_weights',
+                                'loss_history']  # Loss
+        self.step_size = 5
+        self.loss_history = []
+
+
     # -----------------------------------------------------------
-    #               NEW OPTIMIZATION FUNCTIONS
+    # -----------------------------------------------------------
+    #                 NEW OPTIMIZATION FUNCTIONS
+    # -----------------------------------------------------------
     # -----------------------------------------------------------
 
-    # ******* TO-DO *******:
-    def todo():
-        """
-        FILL.
-        """
-        # TO-DO
 
-        return None
+    # ******* Compute (Label) Output Function *******:
+    @jax.jit
+    def compute_out(self, self_layers, weights, weights_last, features, labels):
+        """
+        Computes the output of the corresponding label in the QCNN model.
+        """
+        cost = lambda weights, weights_last, feature, label: self_layers.conv_net(weights,
+                                                                weights_last, feature)[
+            label
+        ]
+
+        return jax.vmap(cost, in_axes=(None, None, 0, 0), out_axes=0)(
+            weights, weights_last, features, labels
+        )
+
+    # ******* Compute Accuracy Function *******:
+    def compute_accuracy(self, weights, weights_last, features, labels):
+        """
+        Computes the accuracy over the provided features and labels.
+        """
+        out = self.compute_out(weights, weights_last, features, labels)
+
+        return jnp.sum(out > 0.5) / len(out)
+
+    # ******* Compute Cost Function *******:
+    def compute_cost(self, weights, weights_last, features, labels):
+        """
+        Computes the cost over the provided features and labels.
+        """
+        out = self.compute_out(weights, weights_last, features, labels)
+
+        return 1.0 - jnp.sum(out) / len(labels)
+
+    # ******* Initialize Weights Function *******:
+    def init_weights():
+        """
+        Initializes random weights for the QCNN model.
+        """
+        weights = pnp.random.normal(loc=0, scale=1, size=(81, 2), requires_grad=True)
+        weights_last = pnp.random.normal(loc=0, scale=1, size=4 ** 2 - 1, requires_grad=True)
+
+        return jnp.array(weights), jnp.array(weights_last)
+    
+    # ******* Train QCNN Function *******:
+    def train_qcnn(self, n_train, n_test, n_epochs):
+        """
+        Trains data for the QCNN model.
+        """
+        value_and_grad = jax.jit(jax.value_and_grad(self.compute_cost, argnums=[0, 1]))
+
+        # n_train = self.num_train
+        # n_test = self.num_test
+        # n_epochs = self.n_epochs
+
+        x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data(n_train, n_test, rng)
+        # x_train, y_train, x_test, y_test = load_moments(n_train, n_test, rng)
+        # x_train, y_train, x_test, y_test = load_IC_data(n_train, n_test, rng)
+
+
+        weights, weights_last = self.init_weights()
+
+        cosine_decay_scheduler = optax.cosine_decay_schedule(0.1, decay_steps=n_epochs, alpha=0.95)
+        optimizer = optax.adam(learning_rate=cosine_decay_scheduler)
+        opt_state = optimizer.init((weights, weights_last))
+
+        train_cost_epochs, test_cost_epochs, train_acc_epochs, test_acc_epochs = [], [], [], []
+
+        for step in range(n_epochs):
+            train_cost, grad_circuit = value_and_grad(weights, weights_last, x_train, y_train)
+            updates, opt_state = optimizer.update(grad_circuit, opt_state)
+            weights, weights_last = optax.apply_updates((weights, weights_last), updates)
+
+            train_cost_epochs.append(train_cost)
+
+            train_acc = self.compute_accuracy(weights, weights_last, x_train, y_train)
+            train_acc_epochs.append(train_acc)
+
+            test_out = self.compute_out(weights, weights_last, x_test, y_test)
+            test_acc = jnp.sum(test_out > 0.5) / len(test_out)
+            test_acc_epochs.append(test_acc)
+            test_cost = 1.0 - jnp.sum(test_out) / len(test_out)
+            test_cost_epochs.append(test_cost)
+
+        return dict(
+            n_train=[n_train] * n_epochs,
+            step=np.arange(1, n_epochs + 1, dtype=int),
+            train_cost=train_cost_epochs,
+            train_acc=train_acc_epochs,
+            test_cost=test_cost_epochs,
+            test_acc=test_acc_epochs,
+        )
+
+    # ******* Run QCNN Training Iterations Function *******:
+    def run_iterations(self, n_train):
+        """
+        Runs selected number of iterations of training loop for the QCNN model.
+        """
+        n_test = 2
+        n_epochs = 100
+        n_reps = 10
+
+        results_df = pd.DataFrame(
+            columns=["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
+        )
+
+        for _ in range(n_reps):
+            results = self.train_qcnn(n_train=n_train, n_test=n_test, n_epochs=n_epochs)
+            results_df = pd.concat(
+                [results_df, pd.DataFrame.from_dict(results)], axis=0, ignore_index=True
+            )
+
+        return results_df
+    
+    # ******* Compute Aggregated Training Results Function *******:
+    def compute_aggregated_results(self, n_train):
+        """
+        Function to run training iterations for multiple sizes and aggregate the results.
+        
+        Args:
+        -> n_train: Number of training samples to start with
+        """
+        # n_test = 2
+        # n_train = 2
+        # n_epochs = 100
+        # n_reps = 10
+
+        # run training for multiple sizes
+        # train_sizes = [2, 5, 10, 20, 40, 80]
+        train_sizes = [2]
+        results_df = self.run_iterations(n_train=n_train)
+        for n_train in train_sizes[1:]:
+            results_df = pd.concat([results_df, self.run_iterations(n_train=n_train)])
+        
+        return results_df
+    
+    # ******* Plot Aggregated Training Results Function *******:
+    def plot_aggregated_results(results_df, steps=100, 
+                            title_loss='Train and Test Losses', 
+                            title_accuracy='Train and Test Accuracies',
+                            markevery=10):
+        """
+        Function to aggregate and plot results from a DataFrame.
+        
+        Args:
+        -> results_df: DataFrame containing the results to aggregate and plot
+        -> steps: Specific steps or epochs to consider for the final loss difference calculation
+        -> title_loss: Title for the loss plot (Optional)
+        -> title_accuracy: Title for the accuracy plot (Optional)
+        -> markevery: Interval at which markers are displayed (Optional)
+        """
+        train_sizes = [2, 5, 10]
+
+        # aggregate dataframe
+        df_agg = results_df.groupby(["n_train", "step"]).agg(["mean", "std"])
+        df_agg = df_agg.reset_index()
+
+        sns.set_style('whitegrid')
+        colors = sns.color_palette()
+        fig, axes = plt.subplots(ncols=2, figsize=(16.5, 5))
+
+        generalization_errors = []
+        train_sizes = [2, 5, 10]
+        # plot losses and accuracies
+        for i, n_train in enumerate(train_sizes):
+            df = df_agg[df_agg.n_train == n_train]
+
+            dfs = [df.train_cost["mean"], df.test_cost["mean"], df.train_acc["mean"], df.test_acc["mean"]]
+            lines = ["o-", "x--", "o-", "x--"]
+            labels = [fr"$N={n_train}$", None, fr"$N={n_train}$", None]
+            axs = [0, 0, 1, 1]
+
+            for k in range(4):
+                ax = axes[axs[k]]
+                ax.plot(df.step, dfs[k], lines[k], label=labels[k], markevery=markevery, color=colors[i], alpha=0.8)
+
+
+            # plot final loss difference
+            dif = df[df.step == steps].test_cost["mean"] - df[df.step == steps].train_cost["mean"]
+            generalization_errors.append(dif)
+
+        # format loss plot
+        ax = axes[0]
+        ax.set_title(title_loss, fontsize=14)
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Loss')
+
+        # format generalization error plot
+        # ax = axes[1]
+        # ax.plot(train_sizes, generalization_errors, "o-", label=r"$gen(\alpha)$")
+        # ax.set_xscale('log')
+        # ax.set_xticks(train_sizes)
+        # ax.set_xticklabels(train_sizes)
+        # ax.set_title(r'Generalization Error $gen(\alpha) = R(\alpha) - \hat{R}_N(\alpha)$', fontsize=14)
+        # ax.set_xlabel('Training Set Size')
+
+        # format loss plot
+        ax = axes[1]
+        ax.set_title(title_accuracy, fontsize=14)
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Accuracy')
+        ax.set_ylim(0.5, 1.05)
+
+        legend_elements = [
+            mpl.lines.Line2D([0], [0], label=f'N={n}', color=colors[i]) for i, n in enumerate(train_sizes)
+            ] + [
+            mpl.lines.Line2D([0], [0], marker='o', ls='-', label='Train', color='Black'),
+            mpl.lines.Line2D([0], [0], marker='x', ls='--', label='Test', color='Black')
+            ]
+
+        axes[0].legend(handles=legend_elements, ncol=3)
+        axes[1].legend(handles=legend_elements, ncol=3)
+
+        #axes[1].set_yscale('log', base=2)
+        plt.show()
 
 
 # **********************************************************************************************
