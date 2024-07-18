@@ -15,36 +15,26 @@ from torch.utils.data import DataLoader  # (NOT ACCESSED)
 # import tensorflow as tf
 # from tensorflow.keras.datasets import mnist
 
+# Package:
+# from .operators import QuantumMathOps as qmo
 
-################### MNIST DATASET CLASS ######################
+
+# ==============================================================================================
+#                            (MNIST) DATA LOADING CLASS (LPPC)
+# ==============================================================================================
 
 
-# CLASS IMPORTS ("gellmann_ops.py"):
-# from .gellmann_ops import GellMannOps as gell_ops
-
-class DataLPPC:
+class LoadDataLPPC:
     """
-    Class for loading and processing MNIST data for quantum convolutional neural networks.
+    Class for loading and processing MNIST data for quantum convolutional neural networks. Class
+    functions originating from original QCNN package.
     """
-    def __init__(self):
-        # QUBITS:
-        self.n_qubits = 6 # -> Test Config #3 (6 Qubits)
-        # ACTIVE QUBITS:
-        self.active_qubits = 6 # -> Test Config #3 (6 Qubits)
-        # WIRES:
-        self.num_wires = 2 # For QCNN Drawings
 
-    # SAMPLE DATA FUNCTION:
-    @staticmethod
-    def mnist_flatten():
-        """
-        Generates sample data for QCNN.
-        """
-        # TODO
-
-        return
+    # -----------------------------------------------------------
+    #       QC AND MNIST DATA LOADING FUNCTIONS (LPPC)
+    # -----------------------------------------------------------
     
-    # LOADING MNIST DATA FUNCTION (TENSORFLOW):
+    # ******* Loading MNIST Data Function (TensorFlow) *******:
     @staticmethod
     def load_mnist_tf():
         """
@@ -59,9 +49,8 @@ class DataLPPC:
         # notebook imported the MNIST dataset using TorchVision.
         
         return train_images, train_labels, test_images, test_labels
-
     
-    # LOADING MNIST DATA FUNCTION (TORCHVISION):
+    # ******* Loading MNIST Data Function (TorchVision) *******:
     @staticmethod
     def load_mnist_torch(batch_train, batch_test, root):
         """
@@ -85,8 +74,7 @@ class DataLPPC:
         
         return train_images, train_labels, test_images, test_labels
 
-    
-    # REDUCING IMPORTED MNIST DATA FUNCTION:
+    # ******* Reducing Imported MNIST Data Function *******:
     @staticmethod
     def mnist_reduce(train_images, train_labels, test_images, test_labels):
         """
@@ -126,7 +114,7 @@ class DataLPPC:
         return train_images, train_labels, test_images, test_labels
 
     
-    # FLATTENING IMPORTED MNIST DATA FUNCTION:
+    # ******* Flattening Imported MNIST Data Function *******:
     @staticmethod
     def mnist_flatten(train_images, test_images):
         """
@@ -139,21 +127,22 @@ class DataLPPC:
         return train_images, test_images
 
     
-    # PADDING TRAINING AND TESTING DATA FUNCTION:
+    # ******* Padding Train and Test Data Function *******:
     @staticmethod
     def mnist_padding(train_images, train_labels, test_images, test_labels,
-                      n_qubits=None):
+                      n_qubits=None, check_qubits=True):
         """
         Pads MNIST train and test images to the desired shape and returns the padded datasets.
         """
-        # QUBIT CHECK:
-        #-------------------------------------
-        # Check 'n_qubits' is passed:
-        if n_qubits is None:
-            # n_qubits = self.n_qubits
-            # n_qubits = 10
-            n_qubits = 2 # FOR TESTING
-        #-------------------------------------
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Number of Qubits:
+            if n_qubits is None:
+                # n_qubits = 2
+                # n_qubits = 3
+                # n_qubits = 4
+                # n_qubits = 10
+                n_qubits = 6 
 
         # Convert Data to Numpy Arrays:
         x_train = np.array(train_images)
@@ -168,26 +157,44 @@ class DataLPPC:
         x_test = np.pad(x_test, ((0, 0), (0, (2**n_qubits) - x_test.shape[1])), mode='constant')
 
         return x_train, y_train, x_test, y_test
-    
 
-    # ******* UPDATED DATA VERSION(S) *******
+# ==============================================================================================
+#                             NEW (MNIST) DATA LOADING CLASS
+# ==============================================================================================
+ 
 
+class LoadDataQC:
+    """
+    New class for loading and processing MNIST data for quantum convolutional neural networks, as well
+    as generating random sample data for use in QCNN.
+    """
+    # ***** IMPORT LoadDataLPPC() CLASS *****:
+    data_lppc = LoadDataLPPC()
 
-    # UPDATED LOAD MNIST FUNCTION:
+    # ******* Sample Quantum Circuit Data Function *******:
     @staticmethod
-    def load_mnist_lppc(*args, **kwargs):
+    def sample_qcdata():
         """
-        Returns the most recent version of the LOAD MNIST function used in the 
-        QCNN (CURRENT VERSION: TORCH).
+        Generates sample data for QCNN.
         """
-        # Define Class:
-        lppc_data = DataLPPC()
+        # TODO
 
-        # Return Current Load MNIST ('load_mnist_torch') with appropriate arguments:
-        return lppc_data.load_mnist_torch(*args, **kwargs)
+        return None
+    
+    # ******* TO-DO *******:
+    @staticmethod
+    def todo():
+        """
+        FILL.
+        """
+        # TO-DO
+
+        return None
 
 
-################### MAIN ######################
+# **********************************************************************************************
+#                                          MAIN
+# **********************************************************************************************
 
 
 def main():

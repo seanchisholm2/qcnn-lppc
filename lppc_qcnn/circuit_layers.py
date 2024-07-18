@@ -15,36 +15,44 @@ from torch.utils.data import DataLoader  # (NOT ACCESSED)
 # import tensorflow as tf
 # from tensorflow.keras.datasets import mnist
 
+# Package:
+# from .operators import QuantumMathOps as qmo
+
 
 # ==============================================================================================
-#                                         CLASS NAME
+#                                      QCNN LAYERS CLASS
 # ==============================================================================================
 
 
 class LayersQC:
     """
-    Contains all relevant circuit and layer functions for different layers in a quantum convolutional neural network.
+    Contains all relevant circuit and layer functions for the quantum convolutional neural network.
     """
     def __init__(self):
         # QUBITS:
-        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration
-        self.n_qubits_draw = 2 # 2 qubit config for DRAWING
+        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
+        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
         # ACTIVE QUBITS:
-        self.active_qubits = 6 # Set 'active_qubits' equal to desired qubit configuration
+        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
         # WIRES:
-        self.num_wires = 2 # For Original QCNN Drawings
-        self.wires = 6 # Other Usage
+        self.num_wires = 2
+        self.wires = 6
     
+    # -----------------------------------------------------------
+    #        ORIGINAL CIRCUIT AND LAYER FUNCTIONS (LPPC)
+    # -----------------------------------------------------------
 
-    # Original Convolutional Layer:
-    def conv_layer_orig(self, weights, active_qubits,
-                      n_qubits=None):
+    # ******* Original Convolutional Layer *******:
+    def conv_layer_orig(self, weights, active_qubits, n_qubits=None,
+                        check_qubits=True):
         """
         Applies a quantum convolutional layer (original version).
         """
-        # Check Number of Qubits:
-        if n_qubits is None:
-            n_qubits = self.n_qubits
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Number of Qubits:
+            if n_qubits is None:
+                n_qubits = self.n_qubits
 
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
         pool_operators = gell_ops.generate_gell_mann(gell_ops, (2**n_qubits))
@@ -64,16 +72,18 @@ class LayersQC:
 
             index += 2
 
-    # Original Pooling Layer:
-    def pool_layer_orig(self, weights, active_qubits,
-                      n_qubits=None):
+    # ******* Original Pooling Layer *******:
+    def pool_layer_orig(self, weights, active_qubits, n_qubits=None,
+                        check_qubits=True):
         """
         Applies two-qubit pooling operation to inputted qubits, including controlled rotation 
         based on a conditional measurement (original version).
         """
-        # Check Number of Qubits:
-        if n_qubits is None:
-            n_qubits = self.n_qubits
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Number of Qubits:
+            if n_qubits is None:
+                n_qubits = self.n_qubits
         
         # Generate Gell-Mann matrices for 2-D space (single qubit operators):
         pool_operators = gell_ops.generate_gell_mann(gell_ops, 2**len(n_qubits))
@@ -112,14 +122,16 @@ class LayersQC:
 
 
     # ******* Original Fully-Connected Layer *******:
-    def fc_layer_orig(self, params, active_qubits,
-                                 n_qubits=None):
+    def fc_layer_orig(self, params, active_qubits, n_qubits=None,
+                      check_qubits=True):
         """
         Applies a fully connected layer to the remaining active qubits (original version).
         """
-        # Check Number of Qubits:
-        if n_qubits is None:
-            n_qubits = self.n_qubits
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Number of Qubits:
+            if n_qubits is None:
+                n_qubits = self.n_qubits
 
         num_qubits = len(active_qubits)  # Initialize active qubits
 
@@ -131,16 +143,18 @@ class LayersQC:
                 qml.CNOT(wires=[active_qubits[i], active_qubits[j]])
 
 
-    # Original Fully-Connected Layer with Two-Qubit Unitaries:
-    def fc_layer_unitary(self, params, active_qubits,
-                                 n_qubits=None):
+    # ******* Original Fully-Connected Layer (with Two-Qubit Unitaries) *******:
+    def fc_layer_unitary(self, params, active_qubits, n_qubits=None,
+                         check_qubits=True):
         """
         Applies a fully connected layer to the remaining active qubits, using two-qubit unitary
         operators (original version).
         """
-        # Check Number of Qubits:
-        if n_qubits is None:
-            n_qubits = self.n_qubits
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Number of Qubits:
+            if n_qubits is None:
+                n_qubits = self.n_qubits
         
         # Generate Gell-Mann matrices for vector space:
         fc_mats = gell_ops.generate_gell_mann(gell_ops, 2**len(n_qubits))
@@ -149,22 +163,24 @@ class LayersQC:
         # Apply Fully Connected Operator to active qubits:
         qml.QubitUnitary(fc_op, wires=active_qubits)
 
-    # Original Quantum Circuit:
+    # ******* Original Quantum Circuit *******:
     def qcircuit_orig(self, params, x, active_qubits=None, n_qubits=None,
-                    draw=False):
+                      check_qubits=True, draw=False):
         """
         Defines a quantum circuit for a Quantum Convolutional Neural Network (QCNN). Encodes
         input features using amplitude embedding, applies a convolutional layer, a pooling layer,
         and a fully connected layer, and then measures the qubits (original version).
         """
-        # Check Active Qubits:
-        if active_qubits is None:
-            active_qubits = self.active_qubits
-            active_qubits = list(range(active_qubits))
-        
-        # Check Number of Qubits:
-        if n_qubits is None:
-            n_qubits = self.n_qubits
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Active Qubits:
+            if active_qubits is None:
+                active_qubits = self.active_qubits
+                active_qubits = list(range(active_qubits))
+            
+            # Number of Qubits:
+            if n_qubits is None:
+                n_qubits = self.n_qubits
 
         # Amplitude Embedding:
         if draw is not True:
@@ -189,11 +205,23 @@ class LayersQC:
         middle_qubit = active_qubits[len(active_qubits) // 2]
         
         return qml.expval(qml.PauliZ(middle_qubit))
+    
+    # -----------------------------------------------------------
+    #             NEW CIRCUIT AND LAYER FUNCTIONS
+    # -----------------------------------------------------------
+
+    def todo():
+        """
+        FILL.
+        """
+        # TO-DO
+
+        return None
 
 
-# ==============================================================================================
-#                                         CLASS NAME
-# ==============================================================================================
+# =============================================================================================
+#                                    CIRCUIT DRAWING CLASS
+# =============================================================================================
 
 
 class DrawQC(LayersQC):
@@ -205,39 +233,44 @@ class DrawQC(LayersQC):
     none is specified.
     """
     def __init__(self):
-        super().__init__()
-        self.layer = LayersQC()
+        self.layers = LayersQC()
         # QUBITS:
-        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration
-        self.n_qubits_draw = 2 # 2 qubit config for DRAWING
+        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
+        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
         # ACTIVE QUBITS:
-        self.active_qubits = 6 # Set 'active_qubits' equal to desired qubit configuration
+        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
         # WIRES:
-        self.num_wires = 2 # For Original QCNN Drawings
-        self.wires = 6 # Other Usage
+        self.num_wires = 2
+        self.wires = 6
 
-    # LPPC Pooling Layer Drawing (Original):
+    # -----------------------------------------------------------
+    #            ORIGINAL DRAWING FUNCTIONS (LPPC)
+    # -----------------------------------------------------------
+
+    # ******* Original Pooling Layer Drawing *******:
     def draw_pool_lppc(self, params, x, active_qubits=None, n_qubits=None,
-                        version=None):
+                        check_qubits=True):
         """
         Draws the pooling layer functions for the LPPC QCNN package. Takes in a parameter 
         'version' to denote the version of the pooling layer that you want (3 total), and 
         defaults to the most recent version if nothing is passed. Uses qml.draw() to complete
         circuit diagrams.
         """
-        # Check Active Qubits:
-        if active_qubits is None:
-            active_qubits = self.active_qubits
-            active_qubits = list(range(active_qubits))
-        
-        # Check Number of Qubits:
-        if n_qubits is None:
-            n_qubits = self.n_qubits
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Active Qubits:
+            if active_qubits is None:
+                active_qubits = self.active_qubits
+                active_qubits = list(range(active_qubits))
+            
+            # Number of Qubits:
+            if n_qubits is None:
+                n_qubits = self.n_qubits
 
         # Initialize Device:
         dev = qml.device("default.qubit", wires=n_qubits)
 
-        # POOLING LAYER CIRCUIT:
+        # CIRCUIT:
         @qml.qnode(dev)
         def pool_circuit(self, params, active_qubits):
             self.pool_layer_orig(self, params, active_qubits)
@@ -248,28 +281,30 @@ class DrawQC(LayersQC):
         print(drawing)
 
 
-    # LPPC Convolutional Layer Drawing (Original):
+    # ******* Original Convolutional Layer Drawing *******:
     def draw_conv_lppc(self, params, x, active_qubits=None, n_qubits=None,
-                        version=None):
+                        check_qubits=True):
         """
         Draws the convolutional layer functions for the LPPC QCNN package. Takes in a parameter 
         'version' to denote the version of the convolutional layer that you want (2 total), and 
         defaults to the most recent version if nothing is passed. Uses qml.draw() to complete
         circuit diagrams.
         """
-        # Check Active Qubits:
-        if active_qubits is None:
-            active_qubits = self.active_qubits
-            active_qubits = list(range(active_qubits))
-        
-        # Check Number of Qubits:
-        if n_qubits is None:
-            n_qubits = self.n_qubits
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Active Qubits:
+            if active_qubits is None:
+                active_qubits = self.active_qubits
+                active_qubits = list(range(active_qubits))
+            
+            # Number of Qubits:
+            if n_qubits is None:
+                n_qubits = self.n_qubits
 
         # Initialize Device:
         dev = qml.device("default.qubit", wires=n_qubits)
 
-        # CONVOLUTIONAL LAYER CIRCUIT:
+        # CIRCUIT:
         @qml.qnode(dev)
         def conv_circuit(self, params, active_qubits):
             self.conv_layer_orig(self, params, active_qubits)
@@ -280,8 +315,9 @@ class DrawQC(LayersQC):
         print(drawing)
 
 
-    # LPPC Fully-Connected Layer Drawing (Original):
-    def draw_fc_lppc(self, params, active_qubits=None, n_qubits=None, version="unitary"):
+    # ******* Original Fully Connected Layer Drawing *******:
+    def draw_fc_lppc(self, params, active_qubits=None, n_qubits=None,
+                     check_qubits=True, version="unitary"):
         """
         Draws the fully connected layer functions for the LPPC QCNN package. Takes in a parameter 
         'version' to denote the version of the fully connected layer that you want (2 total), and 
@@ -289,19 +325,21 @@ class DrawQC(LayersQC):
         circuit diagrams (Note: argument for training data ('x') removed because it was not accessed,
         as of 7/17/2024).
         """
-        # Check Active Qubits:
-        if active_qubits is None:
-            active_qubits = self.active_qubits
-            active_qubits = list(range(active_qubits))
-        
-        # Check Number of Qubits:
-        if n_qubits is None:
-            n_qubits = self.n_qubits
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Active Qubits:
+            if active_qubits is None:
+                active_qubits = self.active_qubits
+                active_qubits = list(range(active_qubits))
+            
+            # Number of Qubits:
+            if n_qubits is None:
+                n_qubits = self.n_qubits
 
         # Initialize Device:
         dev = qml.device("default.qubit", wires=n_qubits)
 
-        # FULLY-CONNECTED LAYER CIRCUIT:
+        # CIRCUIT:
         @qml.qnode(dev)
         def fc_circuit(self, params, active_qubits):
             if version == "original":
@@ -319,27 +357,26 @@ class DrawQC(LayersQC):
 
 
 # ==============================================================================================
-#                                         CLASS NAME
+#                               OPTIMIZATION AND TRAINING CLASS
 # ==============================================================================================
 
 
-class OptStepLPPC(DrawQC):
+class TrainQC(DrawQC):
     """
     Contains functions for optimization steps in a Quantum Convolutional Neural Network (QCNN).
     It depends on the layer functions provided in the QCircuitLPPC class.
     """
     def __init__(self):
-        super().__init__()
+        self.layers = LayersQC()
         self.qc_draw = DrawQC()
-        self.layer = LayersQC()
         # QUBITS:
-        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration
-        self.n_qubits_draw = 2 # 2 qubit config for DRAWING
+        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
+        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
         # ACTIVE QUBITS:
-        self.active_qubits = 6 # Set 'active_qubits' equal to desired qubit configuration
+        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
         # WIRES:
-        self.num_wires = 2 # For Original QCNN Drawings
-        self.wires = 6 # Other Usage
+        self.num_wires = 2
+        self.wires = 6
 
         # TRAINING:
         self.learning_rate = 0.01
@@ -357,7 +394,11 @@ class OptStepLPPC(DrawQC):
         self.step_size = 5
         self.loss_history = []
 
-    # SELECT OPTIMIZER:
+    # -----------------------------------------------------------
+    #         ORIGINAL OPTIMIZATION FUNCTIONS (LPPC)
+    # -----------------------------------------------------------
+    
+    # ******* Select QCNN Optimizer *******:
     def qcnn_opt_select(self, opt_methods=None, opt_num=None):
         """
         Selects and returns the desired optimizer from the given list of optimizers, based on the 
@@ -393,8 +434,7 @@ class OptStepLPPC(DrawQC):
 
         return opt
 
-
-    # LIST AVAILABLE OPTIMIZERS:
+    # ******* List Available QCNN Optimizers *******:
     def qcnn_opt_list(self):
         """
         Prints the list of optimizer options and their associated 'opt_num' values. Allows list of 
@@ -423,8 +463,7 @@ class OptStepLPPC(DrawQC):
             print(f"{num}: {name}")
             print("-------")
 
-
-    # Original Mean Squared Error Cost Function:
+    # ******* Original Mean Squared Error Cost *******:
     def mse_cost(self, params, x, y, n_qubits=None):
         """
         Computes the Mean Squared Error (MSE) cost function (Note: Specifically 
@@ -438,29 +477,24 @@ class OptStepLPPC(DrawQC):
         predictions = np.array([self.qcircuit_lppc(self, params, xi) for xi in x])
         
         return np.mean((predictions - y) ** 2)
-    
-    # Original Stochastic Gradient Descent Function:
+
+    # ******* Original Stochastic Gradient Descent *******:
     def stoch_grad_orig(self, opt, cost, params, x, y, learning_rate, batch_size, max_iterations,
-                      conv_tol, active_qubits=None, n_qubits=None):
+                      conv_tol, active_qubits=None, n_qubits=None, check_qubits=True):
         """
         Updates parameters using stochastic gradient descent and returns the updated parameters
         and average cost (original version).
         """
-        # ACTIVE QUBIT CHECK:
-        #-------------------------------------------------
-        # Check 'active_qubits' is passed:
-        if active_qubits is None:
-            active_qubits = self.active_qubits
-            # active_qubits = 10 # FOR MNIST
-            # n_qubits = 6 # FOR TESTING 7/16
-            active_qubits = list(range(active_qubits))
-        
-        # Check 'n_qubits' is passed:
-        if n_qubits is None:
-            n_qubits = self.n_qubits
-            # n_qubits = 10 # FOR MNIST
-            # n_qubits = 6 # FOR TESTING 7/16
-        #-------------------------------------------------
+        # Check Qubit Configuration:
+        if check_qubits is True:
+            # Active Qubits:
+            if active_qubits is None:
+                active_qubits = self.active_qubits
+                active_qubits = list(range(active_qubits))
+            
+            # Number of Qubits:
+            if n_qubits is None:
+                n_qubits = self.n_qubits
         
         # Shuffle Data:
         permutation = np.random.permutation(len(x))
@@ -496,8 +530,7 @@ class OptStepLPPC(DrawQC):
         
         return params, avg_cost
 
-
-    # Original Accuracy Function:
+    # ******* Original Accuracy *******:
     def accuracy_orig(self, predictions, y):
         """
         Calculates the accuracy of the QCNN model on the provided testing data. Assumes
@@ -511,9 +544,24 @@ class OptStepLPPC(DrawQC):
         accuracy = true_predictions / len(y)
 
         return accuracy
+    
+    # -----------------------------------------------------------
+    #               NEW OPTIMIZATION FUNCTIONS
+    # -----------------------------------------------------------
+
+    # ******* TO-DO *******:
+    def todo():
+        """
+        FILL.
+        """
+        # TO-DO
+
+        return None
 
 
-################### MAIN ######################
+# **********************************************************************************************
+#                                          MAIN
+# **********************************************************************************************
 
 
 def main():
