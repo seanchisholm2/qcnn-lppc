@@ -103,8 +103,8 @@ class QuantumMathOps():
         for k in range(order):
             j = 0
             while j < k:
-                sym = self.b_mat(self, j, k, order) + self.b_mat(self, k, j, order)
-                anti_sym = complex(0.0, -1.0) * (self.b_mat(self, j, k, order) - self.b_mat(self, k, j, order))
+                sym = self.b_mat(j, k, order) + self.b_mat(k, j, order)
+                anti_sym = complex(0.0, -1.0) * (self.b_mat(j, k, order) - self.b_mat(k, j, order))
                 gm_matrices.append(sym)
                 gm_matrices.append(anti_sym)
                 j += 1
@@ -112,10 +112,10 @@ class QuantumMathOps():
             if k < (order - 1):
                 n = k + 1
                 coeff = np.sqrt(2 / (n * (n + 1)))
-                sum_diag = self.b_mat(self, 0, 0, order)
+                sum_diag = self.b_mat(0, 0, order)
                 for i in range(1, k + 1):
-                    sum_diag += self.b_mat(self, i, i, order)
-                diag_mat = coeff * (sum_diag - n * (self.b_mat(self, (k + 1), (k + 1), order)))
+                    sum_diag += self.b_mat(i, i, order)
+                diag_mat = coeff * (sum_diag - n * (self.b_mat((k + 1), (k + 1), order)))
                 gm_matrices.append(diag_mat)
 
         return gm_matrices

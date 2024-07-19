@@ -903,7 +903,7 @@ class TrainQC(DrawQC):
         return results_df
     
     # ******* PLOT AGGREGATED TRAINING RESULTS *******:
-    def plot_aggregated_results(n_train, results_df, steps=100, 
+    def plot_aggregated_results(results_df, n_train=2, steps=100, 
                             title_loss='Train and Test Losses', 
                             title_accuracy='Train and Test Accuracies',
                             markevery=10):

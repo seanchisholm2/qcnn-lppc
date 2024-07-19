@@ -23,8 +23,8 @@ import jax.numpy as jnp
 
 ## TORCHVISION (FOR DATA):
 import torch
-# from torchvision import datasets
 # from torchvision import transforms
+# from torchvision import datasets
 # from torch.utils.data import DataLoader
 
 ## TENSORFLOW (FOR DATA):
@@ -44,6 +44,94 @@ import torch
 #       lppc_qmo_obj = lppc_qmo
 #       lppc_qmo_obj.sample_function(*args, **kwargs)
 # ************************************************************************************
+
+
+# ============================================================
+#                NEW (MNIST) DATA LOADING CLASS
+# ============================================================
+ 
+
+class LoadDataQC:
+    """
+    New class for loading and processing MNIST data for quantum convolutional neural networks, as
+    well as generating random sample data for use in QCNN.
+    """
+    # ***** IMPORT LoadDataLPPC() CLASS *****:
+    # data_lppc = LoadDataLPPC()
+
+    # ----------------------------------------------------
+    #     DATA AND LOADING FUNCTIONS (NEW/ESSENTIAL)
+    # ----------------------------------------------------
+
+    # ******* NEW LOADING DIGITS DATA *******:
+    @staticmethod
+    def load_digits_data(num_train, num_test, rng):
+        """
+        Returns training and testing data of the digits dataset.
+
+        Args:
+        -> num_train (int): The number of training samples to select from the dataset.
+        -> num_test (int): The number of testing samples to select from the dataset.
+        -> rng (numpy.random.Generator): A random number generator instance for reproducibility.
+        """
+        digits = datasets.load_digits()
+        features, labels = digits.data, digits.target
+
+        # Only use first two classes:
+        features = features[np.where((labels == 0) | (labels == 1))]
+        labels = labels[np.where((labels == 0) | (labels == 1))]
+
+        # Normalize data:
+        features = features / np.linalg.norm(features, axis=1).reshape((-1, 1))
+
+        # Subsample train and test split:
+        train_indices = rng.choice(len(labels), num_train, replace=False)
+        test_indices = rng.choice(
+            np.setdiff1d(range(len(labels)), train_indices), num_test, replace=False
+        )
+
+        x_train, y_train = features[train_indices], labels[train_indices]
+        x_test, y_test = features[test_indices], labels[test_indices]
+
+        return (
+            jnp.asarray(x_train),
+            jnp.asarray(y_train),
+            jnp.asarray(x_test),
+            jnp.asarray(y_test),
+        )
+    
+        # ******* VISUALIZING (DIGITS) DATA *******:
+    @staticmethod
+    def draw_mnist_data():
+        """
+        Loads the MNIST digits dataset, filters the images and labels for digits 0 and 1,
+        and displays the first 12 images in a 1x12 grid.
+        """
+        digits = datasets.load_digits()
+        images, labels = digits.data, digits.target
+
+        images = images[np.where((labels == 0) | (labels == 1))]
+        labels = labels[np.where((labels == 0) | (labels == 1))]
+
+        fig, axes = plt.subplots(nrows=1, ncols=12, figsize=(3, 1))
+
+        for i, ax in enumerate(axes.flatten()):
+            ax.imshow(images[i].reshape((8, 8)), cmap="gray")
+            ax.axis("off")
+
+        plt.tight_layout()
+        plt.subplots_adjust(wspace=0, hspace=0)
+        plt.show()
+
+    # ******* SAMPLE QUANTUM CIRCUIT DATA *******:
+    @staticmethod
+    def sample_qcdata():
+        """
+        Generates sample data for QCNN.
+        """
+        # TO-DO: Implement this function
+
+        return None
 
 
 # ============================================================
@@ -184,94 +272,6 @@ class LoadDataLPPC:
         x_test = np.pad(x_test, ((0, 0), (0, (2**n_qubits) - x_test.shape[1])), mode='constant')
 
         return x_train, y_train, x_test, y_test
-
-
-# ============================================================
-#                NEW (MNIST) DATA LOADING CLASS
-# ============================================================
- 
-
-class LoadDataQC:
-    """
-    New class for loading and processing MNIST data for quantum convolutional neural networks, as
-    well as generating random sample data for use in QCNN.
-    """
-    # ***** IMPORT LoadDataLPPC() CLASS *****:
-    # data_lppc = LoadDataLPPC()
-
-    # ----------------------------------------------------
-    #     DATA AND LOADING FUNCTIONS (NEW/ESSENTIAL)
-    # ----------------------------------------------------
-
-    # ******* NEW LOADING DIGITS DATA *******:
-    @staticmethod
-    def load_digits_data(num_train, num_test, rng):
-        """
-        Returns training and testing data of the digits dataset.
-
-        Args:
-        -> num_train (int): The number of training samples to select from the dataset.
-        -> num_test (int): The number of testing samples to select from the dataset.
-        -> rng (numpy.random.Generator): A random number generator instance for reproducibility.
-        """
-        digits = datasets.load_digits()
-        features, labels = digits.data, digits.target
-
-        # Only use first two classes:
-        features = features[np.where((labels == 0) | (labels == 1))]
-        labels = labels[np.where((labels == 0) | (labels == 1))]
-
-        # Normalize data:
-        features = features / np.linalg.norm(features, axis=1).reshape((-1, 1))
-
-        # Subsample train and test split:
-        train_indices = rng.choice(len(labels), num_train, replace=False)
-        test_indices = rng.choice(
-            np.setdiff1d(range(len(labels)), train_indices), num_test, replace=False
-        )
-
-        x_train, y_train = features[train_indices], labels[train_indices]
-        x_test, y_test = features[test_indices], labels[test_indices]
-
-        return (
-            jnp.asarray(x_train),
-            jnp.asarray(y_train),
-            jnp.asarray(x_test),
-            jnp.asarray(y_test),
-        )
-    
-        # ******* VISUALIZING (DIGITS) DATA *******:
-    @staticmethod
-    def draw_mnist_data():
-        """
-        Loads the MNIST digits dataset, filters the images and labels for digits 0 and 1,
-        and displays the first 12 images in a 1x12 grid.
-        """
-        digits = datasets.load_digits()
-        images, labels = digits.data, digits.target
-
-        images = images[np.where((labels == 0) | (labels == 1))]
-        labels = labels[np.where((labels == 0) | (labels == 1))]
-
-        fig, axes = plt.subplots(nrows=1, ncols=12, figsize=(3, 1))
-
-        for i, ax in enumerate(axes.flatten()):
-            ax.imshow(images[i].reshape((8, 8)), cmap="gray")
-            ax.axis("off")
-
-        plt.tight_layout()
-        plt.subplots_adjust(wspace=0, hspace=0)
-        plt.show()
-
-    # ******* SAMPLE QUANTUM CIRCUIT DATA *******:
-    @staticmethod
-    def sample_qcdata():
-        """
-        Generates sample data for QCNN.
-        """
-        # TO-DO: Implement this function
-
-        return None
 
 
 # **************************************************************************************************
