@@ -1,41 +1,41 @@
-########################################## LOAD_QC_DATA.PY ############################################
+########################################### LOAD_QC_DATA.PY ###########################################
 
-### IMPORTS / DEPENDENCIES:
+### ***** IMPORTS / DEPENDENCIES *****:
 
-# PLOTTING:
-import matplotlib as mpl
+## PLOTTING:
+import matplotlib as mpl # (NOT ACCESSED)
 import matplotlib.pyplot as plt
 
-# JAX:
+## PENNYLANE:
+from pennylane import numpy as np
+
+## DATA:
+from sklearn import datasets
+
+## JAX:
 import jax;
-# JAX CONFIGURATIONS:
+## JAX CONFIGURATIONS:
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import jax.experimental.sparse as jsp # (NOT ACCESSED)
-import jax.scipy.linalg as jsl # (NOT ACCESSED)
+# import jax.experimental.sparse as jsp # (NOT ACCESSED)
+# import jax.scipy.linalg as jsl # (NOT ACCESSED)
 
-# PennyLane:
-import pennylane as qml # (NOT ACCESSED)
-from pennylane import numpy as np
-
-# DATA:
-# from sklearn import datasets
-
-# TorchVision (FOR DATA):
+## TORCHVISION (FOR DATA):
 import torch
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+# from torchvision import datasets
+# from torchvision import transforms
+# from torch.utils.data import DataLoader
 
-# TensorFlow (FOR DATA):
+## TENSORFLOW (FOR DATA):
 # import tensorflow as tf
 # from tensorflow.keras.datasets import mnist
 
-# PACKAGE(S):
-# # *****************************************************************************
+### ***** PACKAGE(S) *****:
+# ************************************************************************************
 # OPERATORS.PY:
-# from .qc_operators import QuantumMathOps as qmath_ops # QuantumMathOps() Class
-# from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO() Class
+# from .qc_operators import QuantumMathOps as qmath_ops # QuantumMathOps()
+# from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO() # (NOT ACCESSED)
 # Example Usage(s) (Instance Method):
 # -> QuantumMathOps():
 #       qmo_obj = qmath_ops
@@ -43,12 +43,12 @@ from torch.utils.data import DataLoader
 # -> PeguinsQMO():
 #       lppc_qmo_obj = lppc_qmo
 #       lppc_qmo_obj.sample_function(*args, **kwargs)
-# # *****************************************************************************
+# ************************************************************************************
 
 
-# ==============================================================================================
-#                            (MNIST) DATA LOADING CLASS (LPPC)
-# ==============================================================================================
+# ============================================================
+#              (MNIST) DATA LOADING CLASS (LPPC)
+# ============================================================
 
 
 class LoadDataLPPC:
@@ -57,15 +57,11 @@ class LoadDataLPPC:
     functions originating from original QCNN package (LPPC).
     """
 
-
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-    #    ORIGINAL QC AND MNIST DATA LOADING FUNCTIONS (LPPC)
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-
+    # ----------------------------------------------------
+    # ORIGINAL QC AND MNIST DATA LOADING FUNCTIONS (LPPC)
+    # ----------------------------------------------------
     
-    # ******* Loading MNIST Data Function (TensorFlow) *******:
+    # ******* LOADING MNIST DATA (TENSORFLOW) *******:
     @staticmethod
     def load_mnist_tf():
         """
@@ -76,13 +72,13 @@ class LoadDataLPPC:
         # (Note: Uncomment TensorFlow (FOR DATA) in above imports to use 'mnist'):
         (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
         
-        # *Note*: This function uses TensorFlow to import the MNIST dataset, which is 
+        # (Note: This function uses TensorFlow to import the MNIST dataset, which is 
         # currently not utilized within the QCCN example notebook. Instead, our 
-        # notebook imported the MNIST dataset using TorchVision.
+        # notebook imported the MNIST dataset using TorchVision).
         
         return train_images, train_labels, test_images, test_labels
     
-    # ******* Loading MNIST Data Function (TorchVision) *******:
+    # ******* LOADING MNIST DATA (TORCHVISION) *******:
     @staticmethod
     def load_mnist_torch(batch_train, batch_test, root):
         """
@@ -106,7 +102,7 @@ class LoadDataLPPC:
         
         return train_images, train_labels, test_images, test_labels
 
-    # ******* Reducing Imported MNIST Data Function *******:
+    # ******* REDUCING IMPORTED MNIST DATA *******:
     @staticmethod
     def mnist_reduce(train_images, train_labels, test_images, test_labels):
         """
@@ -117,13 +113,14 @@ class LoadDataLPPC:
         # n_train = 500 # Sample TRAIN Batch Size
         # n_test = 100 # Sample TEST Batch Size
 
-        ############# Multi-Classification -> Binary Classification ################
+        ############### Multi-Classification -> Binary Classification ###############
         # Select Indices for Classes 0 and 1:
         train_idx = np.append(np.where(train_labels.numpy() == 0)[0],
                           np.where(train_labels.numpy() == 1)[0]) # <- In 'train_labels'
 
         test_idx = np.append(np.where(test_labels.numpy() == 0)[0],
                          np.where(test_labels.numpy() == 1)[0]) # <- In 'test_labels'
+
 
         # Convert Indices to PyTorch Tensors:
         train_idx = torch.tensor(train_idx, dtype=torch.long)
@@ -144,9 +141,8 @@ class LoadDataLPPC:
         test_labels = test_labels.type(torch.float64)
 
         return train_images, train_labels, test_images, test_labels
-
     
-    # ******* Flattening Imported MNIST Data Function *******:
+    # ******* FLATTENING IMPORTED MNIST DATA *******:
     @staticmethod
     def mnist_flatten(train_images, test_images):
         """
@@ -157,9 +153,8 @@ class LoadDataLPPC:
         test_images = test_images.reshape(test_images.shape[0], -1)
 
         return train_images, test_images
-
     
-    # ******* Padding Train and Test Data Function *******:
+    # ******* PADDING TRAINING AND TESTING DATA *******:
     @staticmethod
     def mnist_padding(train_images, train_labels, test_images, test_labels,
                       n_qubits=None, check_qubits=True):
@@ -191,9 +186,9 @@ class LoadDataLPPC:
         return x_train, y_train, x_test, y_test
 
 
-# ==============================================================================================
-#                             NEW (MNIST) DATA LOADING CLASS
-# ==============================================================================================
+# ============================================================
+#                NEW (MNIST) DATA LOADING CLASS
+# ============================================================
  
 
 class LoadDataQC:
@@ -202,44 +197,22 @@ class LoadDataQC:
     well as generating random sample data for use in QCNN.
     """
     # ***** IMPORT LoadDataLPPC() CLASS *****:
-    data_lppc = LoadDataLPPC()
+    # data_lppc = LoadDataLPPC()
 
-    
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-    #         DATA AND LOADING FUNCTIONS (NEW/ESSENTIAL)
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
+    # ----------------------------------------------------
+    #     DATA AND LOADING FUNCTIONS (NEW/ESSENTIAL)
+    # ----------------------------------------------------
 
-
-    # ******* Visualizing Data Function *******:
-    @staticmethod
-    def draw_mnist_data():
-        """
-        Loads the MNIST digits dataset, filters the images and labels for digits 0 and 1,
-        and displays the first 12 images in a 1x12 grid.
-        """
-        digits = datasets.load_digits()
-        images, labels = digits.data, digits.target
-
-        images = images[np.where((labels == 0) | (labels == 1))]
-        labels = labels[np.where((labels == 0) | (labels == 1))]
-
-        fig, axes = plt.subplots(nrows=1, ncols=12, figsize=(3, 1))
-
-        for i, ax in enumerate(axes.flatten()):
-            ax.imshow(images[i].reshape((8, 8)), cmap="gray")
-            ax.axis("off")
-
-        plt.tight_layout()
-        plt.subplots_adjust(wspace=0, hspace=0)
-        plt.show()
-
-    # ******* Loading Digits Data Function *******:
+    # ******* NEW LOADING DIGITS DATA *******:
     @staticmethod
     def load_digits_data(num_train, num_test, rng):
         """
-        Return training and testing data of digits dataset.
+        Returns training and testing data of the digits dataset.
+
+        Args:
+        -> num_train (int): The number of training samples to select from the dataset.
+        -> num_test (int): The number of testing samples to select from the dataset.
+        -> rng (numpy.random.Generator): A random number generator instance for reproducibility.
         """
         digits = datasets.load_digits()
         features, labels = digits.data, digits.target
@@ -266,8 +239,31 @@ class LoadDataQC:
             jnp.asarray(x_test),
             jnp.asarray(y_test),
         )
+    
+        # ******* VISUALIZING (DIGITS) DATA *******:
+    @staticmethod
+    def draw_mnist_data():
+        """
+        Loads the MNIST digits dataset, filters the images and labels for digits 0 and 1,
+        and displays the first 12 images in a 1x12 grid.
+        """
+        digits = datasets.load_digits()
+        images, labels = digits.data, digits.target
 
-    # ******* Sample Quantum Circuit Data Function *******:
+        images = images[np.where((labels == 0) | (labels == 1))]
+        labels = labels[np.where((labels == 0) | (labels == 1))]
+
+        fig, axes = plt.subplots(nrows=1, ncols=12, figsize=(3, 1))
+
+        for i, ax in enumerate(axes.flatten()):
+            ax.imshow(images[i].reshape((8, 8)), cmap="gray")
+            ax.axis("off")
+
+        plt.tight_layout()
+        plt.subplots_adjust(wspace=0, hspace=0)
+        plt.show()
+
+    # ******* SAMPLE QUANTUM CIRCUIT DATA *******:
     @staticmethod
     def sample_qcdata():
         """
@@ -278,9 +274,9 @@ class LoadDataQC:
         return None
 
 
-# **********************************************************************************************
-#                                          MAIN
-# **********************************************************************************************
+# **************************************************************************************************
+#                                                MAIN
+# **************************************************************************************************
 
 
 def main():

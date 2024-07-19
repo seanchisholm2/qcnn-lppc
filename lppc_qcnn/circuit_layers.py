@@ -1,42 +1,50 @@
-########################################## CIRCUIT_LAYERS.PY ############################################
+########################################### CIRCUIT_LAYERS.PY ###########################################
 
-### IMPORTS / DEPENDENCIES:
+### ***** IMPORTS / DEPENDENCIES *****:
 
-# PLOTTING:
+## PLOTTING:
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-# PENNYLANE:
+## PENNYLANE:
 import pennylane as qml
 import pennylane.numpy as pnp
 
-# DATA:
+## DATA:
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
-# JAX:
+## JAX:
 import jax;
-# JAX CONFIGURATIONS:
+## JAX CONFIGURATIONS:
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import jax.experimental.sparse as jsp # (NOT ACCESSED)
-import jax.scipy.linalg as jsl # (NOT ACCESSED)
+# import jax.experimental.sparse as jsp # (NOT ACCESSED)
+# import jax.scipy.linalg as jsl # (NOT ACCESSED)
 
 import optax  # (Optimization using Jax)
 
-# OTHER:
-import numpy as np
+## TORCHVISION (FOR CIRCUIT):
+import torch # (NOT ACCESSED)
+# from torchvision import datasets, transforms
+# from torch.utils.data import DataLoader
+
+## TENSORFLOW (FOR CIRCUIT):
+# import tensorflow as tf
+# from tensorflow.keras.datasets import mnist
+
+## OTHER:
 sns.set()
 seed = 0
 rng = np.random.default_rng(seed=seed)
 
-# PACKAGE(S):
-# *****************************************************************************
+### ***** PACKAGE(S) *****:
+# **********************************************************************************
 # *1* OPERATORS.PY:
-from .qc_operators import QuantumMathOps as qmath_ops # QuantumMathOps() Class
-from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO() Class
+from .qc_operators import QuantumMathOps as qmath_ops # QuantumMathOps() 
+from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO() # (NOT ACCESSED)
 # Example Usage(s) (Instance Method):
 # -> QuantumMathOps():
 #       qmo_obj = qmath_ops
@@ -46,19 +54,19 @@ from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO() Class
 #       lppc_qmo_obj.sample_function(*args, **kwargs)
 #
 # *2* LOAD_QC_DATA.PY:
-from .load_qc_data import LoadDataLPPC # (STATIC METHOD)
+# from .load_qc_data import LoadDataLPPC # (STATIC METHOD)
 from .load_qc_data import LoadDataQC # (STATIC METHOD)
 # Example Usage(s) (Static Method):
 #  -> LoadDataLPPC():
 #       LoadDataLPPC.example_function(*args, **kwargs)
 #  -> LoadDataQC():
 #       LoadDataQC.sample_function(*args, **kwargs)
-# *****************************************************************************
+# **********************************************************************************
 
 
-# ==============================================================================================
-#                                 NEW QCNN LAYERS CLASS
-# ==============================================================================================
+# ============================================================
+#                    NEW QCNN LAYERS CLASS                    
+# ============================================================
 
 
 class LayersQC:
@@ -81,17 +89,13 @@ class LayersQC:
         self.wires = 6
         self.n_wires = 6
         self.num_wires = 6
-    
-    
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-    #       CIRCUIT AND LAYER FUNCTIONS (NEW/ESSENTIAL)
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
 
+    # ----------------------------------------------------
+    #     CIRCUIT AND LAYER FUNCTIONS (NEW/ESSENTIAL)
+    # ----------------------------------------------------
 
-    # ******* Convolutional Layer *******:
-    def convolutional_layer(weights, wires, skip_first_layer=True):
+    # ******* CONVOLUTIONAL LAYER *******:
+    def convolutional_layer(self, weights, wires, skip_first_layer=True):
         """
         Adds a convolutional layer to a circuit.
 
@@ -120,7 +124,7 @@ class LayersQC:
                     qml.U3(*weights[9:12], wires=[w])
                     qml.U3(*weights[12:], wires=[wires[indx + 1]])
 
-    # ******* Pooling Layer *******:
+    # ******* POOLING LAYER *******:
     def pooling_layer(self, weights, wires):
         """
         Adds a pooling layer to a circuit.
@@ -146,7 +150,7 @@ class LayersQC:
 
                 qml.cond(m_outcome, qml.U3)(*weights, wires=wires[indx - 1])
 
-    # ******* Four-Qubit Unitary Convolutional Layer *******:
+    # ******* FOUR-QUBIT UNITARY CONVOLUTIONAL LAYER *******:
     def four_conv_layer(self, params, active_qubits, barrier=True):
         """
         Adds a four-qubit unitary convolutional layer to a circuit.
@@ -186,7 +190,7 @@ class LayersQC:
         if barrier:
             qml.Barrier()
 
-    # ******* Three-Qubit Unitary Convolutional Layer *******:
+    # ******* THREE-QUBIT UNITARY CONVOLUTIONAL LAYER *******:
     def three_conv_layer(self, params, active_qubits, barrier=True):
         """
         Adds a three-qubit unitary convolutional layer to a circuit.
@@ -213,7 +217,7 @@ class LayersQC:
         if barrier:
             qml.Barrier()
 
-    # ******* Custom Convolutional Layer *******:
+    # ******* CUSTOM CONVOLUTIONAL LAYER *******:
     def custom_conv_layer(self, params, active_qubits, barrier=True):
 
         start_index = 0 
@@ -275,7 +279,7 @@ class LayersQC:
         if barrier:
             qml.Barrier()
 
-    # ******* Convolutional and Pooling Layer *******:
+    # ******* CONVOLUTIONAL AND POOLING LAYER *******:
     def conv_and_pooling(self, kernel_weights, n_wires, skip_first_layer=True):
         """
         Applies both the convolutional and pooling layer.
@@ -293,7 +297,7 @@ class LayersQC:
         # self.convolutional_layer(kernel_weights[:15], n_wires, skip_first_layer=skip_first_layer)
         self.pooling_layer(kernel_weights[78:], n_wires)
 
-    # ******* Dense Layer *******:
+    # ******* DENSE LAYER *******:
     def dense_layer(self, weights, wires):
         """
         Applies an arbitrary unitary gate to a specified set of wires.
@@ -309,7 +313,7 @@ class LayersQC:
         # Apply Fully Connected Operator to active qubits:
         qml.QubitUnitary(fc_op, wires=wires)
 
-    # ******* Quantum Convolutional Network *******:
+    # ******* QUANTUM CIRCUIT *******:
     @qml.qnode(device)
     def conv_net(self, weights, last_layer_weights, features):
         """
@@ -342,9 +346,9 @@ class LayersQC:
         return qml.probs(wires=(0))
 
 
-# ==============================================================================================
-#                           ORIGINAL QCNN LAYERS CLASS (LPPC)
-# ==============================================================================================
+# ============================================================
+#            ORIGINAL NEW QCNN LAYERS CLASS (LPPC)
+# ============================================================
 
 
 class LayersLPPC:
@@ -367,16 +371,13 @@ class LayersLPPC:
         self.wires = 6
         self.n_wires = 6
         self.num_wires = 6
+        self.n_wires_draw = 2 # (For drawings)
     
-    
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-    #        ORIGINAL CIRCUIT AND LAYER FUNCTIONS (LPPC)
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
+    # ----------------------------------------------------
+    #     ORIGINAL CIRCUIT AND LAYER FUNCTIONS (LPPC)
+    # ----------------------------------------------------
 
-
-    # ******* Original Convolutional Layer *******:
+    # ******* ORIGINAL CONVOLUTIONAL LAYER *******:
     def conv_layer_orig(self, weights, active_qubits, n_qubits=None,
                         check_qubits=True):
         """
@@ -406,7 +407,7 @@ class LayersLPPC:
 
             index += 2
 
-    # ******* Original Pooling Layer *******:
+    # ******* ORIGINAL POOLING LAYER *******:
     def pool_layer_orig(self, weights, active_qubits, n_qubits=None,
                         check_qubits=True):
         """
@@ -454,8 +455,7 @@ class LayersLPPC:
         # Update active qubits by pooling 1 / 2 qubits:
         self.active_qubits = active_qubits[::2]
 
-
-    # ******* Original Fully-Connected Layer *******:
+    # ******* ORIGINAL FULLY CONNECTED LAYER *******:
     def fc_layer_orig(self, params, active_qubits, n_qubits=None,
                       check_qubits=True):
         """
@@ -476,8 +476,7 @@ class LayersLPPC:
                 qml.RY(params[i][j], wires=active_qubits[j])
                 qml.CNOT(wires=[active_qubits[i], active_qubits[j]])
 
-
-    # ******* Original Fully-Connected Layer (with Two-Qubit Unitaries) *******:
+    # ******* ORIGINAL FULLY CONNECTED LAYER (WITH TWO-QUBIT UNITARIES) *******:
     def fc_layer_unitary(self, params, active_qubits, n_qubits=None,
                          check_qubits=True):
         """
@@ -497,7 +496,7 @@ class LayersLPPC:
         # Apply Fully Connected Operator to active qubits:
         qml.QubitUnitary(fc_op, wires=active_qubits)
 
-    # ******* Original Quantum Circuit *******:
+    # ******* ORIGINAL QUANTUM CIRCUIT *******:
     def qcircuit_orig(self, params, x, active_qubits=None, n_qubits=None,
                       check_qubits=True, draw=False):
         """
@@ -541,9 +540,10 @@ class LayersLPPC:
         return qml.expval(qml.PauliZ(middle_qubit))
 
 
-# ==============================================================================================
-#                                NEW CIRCUIT DRAWING CLASS
-# ==============================================================================================
+# ============================================================
+#                 NEW CIRCUIT DRAWING CLASS
+# ============================================================
+
 
 
 class DrawQC(LayersQC):
@@ -555,7 +555,6 @@ class DrawQC(LayersQC):
     none is specified.
     """
     def __init__(self):
-        self.qc_layers = LayersQC()
         # QUBITS:
         self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
         self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
@@ -566,14 +565,10 @@ class DrawQC(LayersQC):
         self.n_wires = 6
         self.num_wires = 6
         self.n_wires_draw = 2 # (For drawings)
-
     
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-    #             DRAWING FUNCTIONS (NEW/ESSENTIAL)
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-
+    # ----------------------------------------------------
+    #          DRAWING FUNCTIONS (NEW/ESSENTIAL)
+    # ----------------------------------------------------
 
     # ******* TO-DO *******:
     def todo_qc_draw():
@@ -585,9 +580,9 @@ class DrawQC(LayersQC):
         pass
 
 
-# ==============================================================================================
-#                           ORIGINAL CIRCUIT DRAWING CLASS (LPPC)
-# ==============================================================================================
+# ============================================================
+#            ORIGINAL CIRCUIT DRAWING CLASS (LPPC)
+# ============================================================
     
 
 class DrawLPPC(LayersLPPC):
@@ -609,16 +604,12 @@ class DrawLPPC(LayersLPPC):
         self.wires = 6
         self.n_wires = 6
         self.num_wires = 2 # For drawings
-
     
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-    #            ORIGINAL DRAWING FUNCTIONS (LPPC)
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
+    # ----------------------------------------------------
+    #         ORIGINAL DRAWING FUNCTIONS (LPPC)
+    # ----------------------------------------------------
 
-
-    # ******* Original Pooling Layer Drawing *******:
+    # ******* ORIGINAL DRAW POOLING LAYER CIRCUIT *******:
     def draw_pool_lppc(self, params, x, active_qubits=None, n_qubits=None,
                         check_qubits=True):
         """
@@ -651,8 +642,7 @@ class DrawLPPC(LayersLPPC):
         drawing = qml.draw(pool_circuit, expansion_strategy="device")(self, params, active_qubits)
         print(drawing)
 
-
-    # ******* Original Convolutional Layer Drawing *******:
+    # ******* ORIGINAL DRAW CONVOLUTIONAL LAYER CIRCUIT *******:
     def draw_conv_lppc(self, params, x, active_qubits=None, n_qubits=None,
                         check_qubits=True):
         """
@@ -685,8 +675,7 @@ class DrawLPPC(LayersLPPC):
         drawing = qml.draw(conv_circuit, expansion_strategy="device")(self, params, active_qubits)
         print(drawing)
 
-
-    # ******* Original Fully Connected Layer Drawing *******:
+    # ******* ORIGINAL DRAW FULLY CONNECTED LAYER CIRCUIT *******:
     def draw_fc_lppc(self, params, active_qubits=None, n_qubits=None,
                      check_qubits=True, version="unitary"):
         """
@@ -727,9 +716,9 @@ class DrawLPPC(LayersLPPC):
         print(drawing)
 
 
-# ==============================================================================================
-#                             NEW OPTIMIZATION AND TRAINING CLASS
-# ==============================================================================================
+# ============================================================
+#            NEW OPTIMIZATION AND TRAINING CLASS
+# ============================================================
 
 
 class TrainQC(DrawQC):
@@ -739,7 +728,6 @@ class TrainQC(DrawQC):
     """
     def __init__(self):
         self.qc_layers = LayersQC()
-        self.qc_draw = DrawQC()
         # QUBITS:
         self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
         self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
@@ -751,6 +739,9 @@ class TrainQC(DrawQC):
         self.num_wires = 2 # For drawings
 
         # TRAINING:
+        self.num_train = 2
+        self.num_test = 2
+
         self.learning_rate = 0.01
         self.num_steps = 100
         self.batch_size = 10
@@ -766,21 +757,17 @@ class TrainQC(DrawQC):
         self.step_size = 5
         self.loss_history = []
 
+    # ----------------------------------------------------
+    #             NEW OPTIMIZATION FUNCTIONS
+    # ----------------------------------------------------
 
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-    #                 NEW OPTIMIZATION FUNCTIONS
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-
-
-    # ******* Compute (Label) Output Function *******:
+    # ******* COMPUTE (LABEL) OUTPUT *******:
     @jax.jit
-    def compute_out(self_layers, weights, weights_last, features, labels):
+    def compute_out(self, weights, weights_last, features, labels):
         """
         Computes the output of the corresponding label in the QCNN model.
         """
-        cost = lambda weights, weights_last, feature, label: self_layers.conv_net(weights,
+        cost = lambda weights, weights_last, feature, label: self.conv_net(self.qc_layers, weights,
                                                                 weights_last, feature)[
             label
         ]
@@ -789,25 +776,25 @@ class TrainQC(DrawQC):
             weights, weights_last, features, labels
         )
 
-    # ******* Compute Accuracy Function *******:
-    def compute_accuracy(self, self_layers, weights, weights_last, features, labels):
+    # ******* NEW COMPUTE ACCURACY *******:
+    def compute_accuracy(self, weights, weights_last, features, labels):
         """
         Computes the accuracy over the provided features and labels.
         """
-        out = self.compute_out(self_layers, weights, weights_last, features, labels)
+        out = self.compute_out(weights, weights_last, features, labels)
 
         return jnp.sum(out > 0.5) / len(out)
 
-    # ******* Compute Cost Function *******:
-    def compute_cost(self, self_layers, weights, weights_last, features, labels):
+    # ******* NEW COMPUTE COST *******:
+    def compute_cost(self, weights, weights_last, features, labels):
         """
         Computes the cost over the provided features and labels.
         """
-        out = self.compute_out(self_layers, weights, weights_last, features, labels)
+        out = self.compute_out(weights, weights_last, features, labels)
 
         return 1.0 - jnp.sum(out) / len(labels)
 
-    # ******* Initialize Weights Function *******:
+    # ******* INITIALIZE WEIGHTS *******:
     def init_weights():
         """
         Initializes random weights for the QCNN model.
@@ -817,16 +804,17 @@ class TrainQC(DrawQC):
 
         return jnp.array(weights), jnp.array(weights_last)
     
-    # ******* Train QCNN Function *******:
+    # ******* NEW TRAIN QCNN *******:
     def train_qcnn(self, n_train, n_test, n_epochs):
         """
         Trains data for the QCNN model.
         """
         value_and_grad = jax.jit(jax.value_and_grad(self.compute_cost, argnums=[0, 1]))
 
-        # n_train = self.num_train
         # n_test = self.num_test
-        # n_epochs = self.n_epochs
+        # n_train = self.num_train
+        # n_test = 2
+        # n_train = 2
 
         x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data(n_train, n_test, rng)
         # x_train, y_train, x_test, y_test = load_moments(n_train, n_test, rng)
@@ -866,12 +854,15 @@ class TrainQC(DrawQC):
             test_acc=test_acc_epochs,
         )
 
-    # ******* Run QCNN Training Iterations Function *******:
-    def run_iterations(self, n_train):
+    # ******* RUN QCNN TRAINING ITERATIONS *******:
+    def run_iterations(self, n_train, n_test):
         """
         Runs selected number of iterations of training loop for the QCNN model.
         """
-        n_test = 2
+        # n_test = self.num_test
+        # n_train = self.num_train
+        # n_test = 2
+        # n_train = 2
         n_epochs = 100
         n_reps = 10
 
@@ -880,21 +871,23 @@ class TrainQC(DrawQC):
         )
 
         for _ in range(n_reps):
-            results = self.train_qcnn(n_train=n_train, n_test=n_test, n_epochs=n_epochs)
+            results = self.train_qcnn(n_train, n_test, n_epochs)
             results_df = pd.concat(
                 [results_df, pd.DataFrame.from_dict(results)], axis=0, ignore_index=True
             )
 
         return results_df
     
-    # ******* Compute Aggregated Training Results Function *******:
-    def compute_aggregated_results(self, n_train):
+    # ******* COMPUTE AGGREGATED TRAINING RESULTS *******:
+    def compute_aggregated_results(self, n_train, n_test):
         """
         Function to run training iterations for multiple sizes and aggregate the results.
         
         Args:
         -> n_train: Number of training samples to start with
         """
+        # n_test = self.num_test
+        # n_train = self.num_train
         # n_test = 2
         # n_train = 2
         # n_epochs = 100
@@ -903,14 +896,14 @@ class TrainQC(DrawQC):
         # run training for multiple sizes
         # train_sizes = [2, 5, 10, 20, 40, 80]
         train_sizes = [2]
-        results_df = self.run_iterations(n_train=n_train)
+        results_df = self.run_iterations(n_train, n_test)
         for n_train in train_sizes[1:]:
-            results_df = pd.concat([results_df, self.run_iterations(n_train=n_train)])
+            results_df = pd.concat([results_df, self.run_iterations(n_train, n_test)])
         
         return results_df
     
-    # ******* Plot Aggregated Training Results Function *******:
-    def plot_aggregated_results(results_df, steps=100, 
+    # ******* PLOT AGGREGATED TRAINING RESULTS *******:
+    def plot_aggregated_results(n_train, results_df, steps=100, 
                             title_loss='Train and Test Losses', 
                             title_accuracy='Train and Test Accuracies',
                             markevery=10):
@@ -925,6 +918,8 @@ class TrainQC(DrawQC):
         -> markevery: Interval at which markers are displayed (Optional)
         """
         train_sizes = [2, 5, 10]
+        # train_sizes = [2]
+        # n_test = 2
 
         # aggregate dataframe
         df_agg = results_df.groupby(["n_train", "step"]).agg(["mean", "std"])
@@ -990,9 +985,9 @@ class TrainQC(DrawQC):
         plt.show()
 
 
-# ==============================================================================================
-#                       ORIGINAL OPTIMIZATION AND TRAINING CLASS (LPPC)
-# ==============================================================================================
+# ============================================================
+#       ORIGINAL OPTIMIZATION AND TRAINING CLASS (LPPC)
+# ============================================================
 
 
 class TrainLPPC(DrawLPPC):
@@ -1028,16 +1023,12 @@ class TrainLPPC(DrawLPPC):
                                   'loss_history']  # Loss
         self.step_size = 5
         self.loss_history = []
-
     
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-    #         ORIGINAL OPTIMIZATION FUNCTIONS (LPPC)
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
-
+    # ----------------------------------------------------
+    #       ORIGINAL OPTIMIZATION FUNCTIONS (LPPC)
+    # ----------------------------------------------------
     
-    # ******* Select QCNN Optimizer *******:
+    # ******* SELECT QCNN OPTIMIZER *******:
     def qcnn_opt_select(opt_methods=None, opt_num=None):
         """
         Selects and returns the desired optimizer from the given list of optimizers, based on the 
@@ -1073,7 +1064,7 @@ class TrainLPPC(DrawLPPC):
 
         return opt
 
-    # ******* Original Mean Squared Error Cost *******:
+    # ******* ORIGINAL MEAN SQUARED ERROR COST *******:
     def mse_cost(self, params, x, y, n_qubits=None):
         """
         Computes the Mean Squared Error (MSE) cost function (Note: Specifically 
@@ -1088,7 +1079,7 @@ class TrainLPPC(DrawLPPC):
         
         return np.mean((predictions - y) ** 2)
 
-    # ******* Original Stochastic Gradient Descent *******:
+    # ******* ORIGINAL STOCHASTIC GRADIENT DESCENT *******:
     def stoch_grad_orig(self, opt, cost, params, x, y, learning_rate, batch_size, max_iterations,
                       conv_tol, active_qubits=None, n_qubits=None, check_qubits=True):
         """
@@ -1140,7 +1131,7 @@ class TrainLPPC(DrawLPPC):
         
         return params, avg_cost
 
-    # ******* Original Accuracy *******:
+    # ******* ORIGINAL ACCURACY *******:
     def accuracy_orig(self, predictions, y):
         """
         Calculates the accuracy of the QCNN model on the provided testing data. Assumes
@@ -1156,9 +1147,9 @@ class TrainLPPC(DrawLPPC):
         return accuracy
 
 
-# **********************************************************************************************
-#                                          MAIN
-# **********************************************************************************************
+# **************************************************************************************************
+#                                                MAIN
+# **************************************************************************************************
 
 
 def main():
