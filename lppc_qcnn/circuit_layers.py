@@ -790,12 +790,14 @@ class TrainQC(DrawQC):
         """
         Computes the cost over the provided features and labels.
         """
+        # compute_cost_lambda = lambda w, wl, f, l: self.compute_cost(w, wl, f, l) # lambda cost function
+        # value_and_grad = jax.jit(jax.value_and_grad(compute_cost_lambda, argnums=[0, 1]))
         out = self.compute_out(weights, weights_last, features, labels)
 
         return 1.0 - jnp.sum(out) / len(labels)
 
     # ******* INITIALIZE WEIGHTS *******:
-    def init_weights():
+    def init_weights(self):
         """
         Initializes random weights for the QCNN model.
         """
@@ -861,8 +863,9 @@ class TrainQC(DrawQC):
         """
         # n_test = self.num_test
         # n_train = self.num_train
-        # n_test = 2
-        # n_train = 2
+
+        n_test = 2
+        n_train = 2
         n_epochs = 100
         n_reps = 10
 
@@ -871,7 +874,7 @@ class TrainQC(DrawQC):
         )
 
         for _ in range(n_reps):
-            results = self.train_qcnn(n_train, n_test, n_epochs)
+            results = self.train_qcnn(n_train=n_train, n_test=n_test, n_epochs=n_epochs)
             results_df = pd.concat(
                 [results_df, pd.DataFrame.from_dict(results)], axis=0, ignore_index=True
             )
@@ -888,17 +891,18 @@ class TrainQC(DrawQC):
         """
         # n_test = self.num_test
         # n_train = self.num_train
-        # n_test = 2
-        # n_train = 2
+
+        n_test = 2
+        n_train = 2
         # n_epochs = 100
         # n_reps = 10
 
         # run training for multiple sizes
         # train_sizes = [2, 5, 10, 20, 40, 80]
         train_sizes = [2]
-        results_df = self.run_iterations(n_train, n_test)
+        results_df = self.run_iterations(n_train=n_train, n_test=n_test)
         for n_train in train_sizes[1:]:
-            results_df = pd.concat([results_df, self.run_iterations(n_train, n_test)])
+            results_df = pd.concat([results_df, self.run_iterations(n_train=n_train, n_test=n_test)])
         
         return results_df
     
