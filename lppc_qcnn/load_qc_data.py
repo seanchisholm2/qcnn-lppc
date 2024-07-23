@@ -11,6 +11,7 @@ from pennylane import numpy as np
 
 ## DATA:
 from sklearn import datasets
+import seaborn as sns
 
 ## JAX:
 import jax;
@@ -18,8 +19,13 @@ import jax;
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-# import jax.experimental.sparse as jsp # (NOT ACCESSED)
-# import jax.scipy.linalg as jsl # (NOT ACCESSED)
+import jax.experimental.sparse as jsp # (NOT ACCESSED)
+import jax.scipy.linalg as jsl # (NOT ACCESSED)
+
+## OTHER:
+sns.set()
+seed = 0
+rng = np.random.default_rng(seed=seed)
 
 ## TORCHVISION (FOR DATA):
 import torch
@@ -77,14 +83,14 @@ class LoadDataQC:
         digits = datasets.load_digits()
         features, labels = digits.data, digits.target
 
-        # Only use first two classes:
+        # only use first two classes
         features = features[np.where((labels == 0) | (labels == 1))]
         labels = labels[np.where((labels == 0) | (labels == 1))]
 
-        # Normalize data:
+        # normalize data
         features = features / np.linalg.norm(features, axis=1).reshape((-1, 1))
 
-        # Subsample train and test split:
+        # subsample train and test split
         train_indices = rng.choice(len(labels), num_train, replace=False)
         test_indices = rng.choice(
             np.setdiff1d(range(len(labels)), train_indices), num_test, replace=False
@@ -100,7 +106,7 @@ class LoadDataQC:
             jnp.asarray(y_test),
         )
     
-        # ******* VISUALIZING (DIGITS) DATA *******:
+    # ******* VISUALIZING (DIGITS) DATA *******:
     @staticmethod
     def draw_mnist_data():
         """

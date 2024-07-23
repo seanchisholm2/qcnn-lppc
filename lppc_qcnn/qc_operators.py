@@ -12,8 +12,8 @@ import jax;
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-# import jax.experimental.sparse as jsp # (NOT ACCESSED)
-import jax.scipy.linalg as jsl
+import jax.experimental.sparse as jsp # (NOT ACCESSED)
+import jax.scipy.linalg as jsl # (NOT ACCESSED)
 
 ## TORCHVISION (FOR OPERATORS):
 import torch
@@ -130,6 +130,7 @@ class QuantumMathOps():
         for mat, param in zip(mats, params):
             final += param * mat
         
+        # return jsl.expm(complex(0, -1) * final) (non-JAX)
         return jsl.expm(complex(0, -1) * final)
 
     # ******* CONTROLLED POOL OPERATOR (WITH NUMPY) *******:
