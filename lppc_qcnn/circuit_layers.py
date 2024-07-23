@@ -813,10 +813,13 @@ class TrainQC(DrawQC):
         """
         value_and_grad = jax.jit(jax.value_and_grad(self.compute_cost, argnums=[0, 1]))
 
+        # SELF:
         # n_test = self.num_test
         # n_train = self.num_train
+
         # n_test = 2
         # n_train = 2
+        # n_epochs = 100
 
         x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data(n_train, n_test, rng)
         # x_train, y_train, x_test, y_test = load_moments(n_train, n_test, rng)
@@ -846,6 +849,22 @@ class TrainQC(DrawQC):
             test_acc_epochs.append(test_acc)
             test_cost = 1.0 - jnp.sum(test_out) / len(test_out)
             test_cost_epochs.append(test_cost)
+
+        train_dict = dict(
+            n_train=[n_train] * n_epochs,
+            step=np.arange(1, n_epochs + 1, dtype=int),
+            train_cost=train_cost_epochs,
+            train_acc=train_acc_epochs,
+            test_cost=test_cost_epochs,
+            test_acc=test_acc_epochs,
+        )
+        # TYPE (DICTIONARY):
+        print(f"train_dict: type = {type(train_dict)}")
+
+        # SHAPES AND TYPES (DICTIONARY ITEMS):
+        print(f"train_dict shapes and types:")
+        for key, value in train_dict.items():
+            print(f"{key}: shape = {np.shape(value)}, type = {type(value)}")
 
         return dict(
             n_train=[n_train] * n_epochs,
