@@ -76,6 +76,7 @@ class LayersQC:
     """
     # DEVICE:
     device = qml.device("default.qubit", wires=6)
+    # device = qml.device("default.mixed", wires=6)
 
     def __init__(self):
         # QUANTUM-MATH-OPS:
@@ -358,6 +359,7 @@ class LayersLPPC:
     """
     # DEVICE:
     device = qml.device("default.qubit", wires=6)
+    # device = qml.device("mixed.qubit", wires=6)
 
     def __init__(self):
         # QUANTUM-MATH-OPS:
@@ -726,8 +728,10 @@ class TrainQC(DrawQC):
     Contains functions for optimization steps in a Quantum Convolutional Neural Network (QCNN).
     It depends on the layer functions provided in the QCircuitLPPC class.
     """
+    # qcnn_layers = LayersLPPC()
     def __init__(self):
-        self.qc_layers = LayersQC()
+        self.qc_layers = LayersQC()  # Instantiate LayersQC (once)
+        # self.qcnn_layers = LayersQC()
         # QUBITS:
         self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
         self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
@@ -763,21 +767,33 @@ class TrainQC(DrawQC):
 
     # ******* COMPUTE (LABEL) OUTPUT *******:
     @jax.jit
-    def compute_out(self, weights, weights_last, features, labels):
+    def compute_out(self, qcnn_layers, weights, weights_last, features, labels):
         """
         Computes the output of the corresponding label in the QCNN model.
         """
-        cost = lambda weights, weights_last, feature, label: self.conv_net(self.qc_layers, weights,
+        '''
+        cost = lambda weights, weights_last, feature, label: self.conv_net(self.qcnn_layers, weights,
                                                                 weights_last, feature)[
             label
         ]
-
+        # qc_layers = LayersQC() # (NOT RECOMMENDED: required in 'conv_net arg?)
+        '''
+        cost = lambda weights, weights_last, feature, label: self.qc_layers.conv_net(self.qc_layers, weights, weights_last, feature)[
+            label
+        ]
+        '''
+        # If you were to define lambda cost function by passing LayersQC() in arguments:
+        cost = lambda weights, weights_last, feature, label: layers_qc.conv_net(layers_qc, weights, weights_last, feature)[
+            label
+        ]
+        # (Note: LayersQC() instantiated in class as "qcnn_layers = LayersQC()", above the __init__)
+        '''
         return jax.vmap(cost, in_axes=(None, None, 0, 0), out_axes=0)(
             weights, weights_last, features, labels
         )
 
     # ******* NEW COMPUTE ACCURACY *******:
-    # @jax.jit
+    @jax.jit
     def compute_accuracy(self, weights, weights_last, features, labels):
         """
         Computes the accuracy over the provided features and labels.
@@ -800,7 +816,7 @@ class TrainQC(DrawQC):
 
     # ******* INITIALIZE WEIGHTS *******:
     # @jax.jit
-    def init_weights(self):
+    def init_weights():
         """
         Initializes random weights for the QCNN model.
         """
@@ -825,17 +841,21 @@ class TrainQC(DrawQC):
 
         '''
         # Define wrapper function for DATA to call method and apply jax:
+        # (Note: should not be required, as x_train, y_train, x_test, y_test are all of type 
+        # "<class 'jaxlib.xla_extension.ArrayImpl'>".)
         @jax.jit
         def load_data(n_train, n_test):
             return LoadDataQC.load_digits_data(n_train, n_test, rng)
         '''
 
-        # x_train, y_train, x_test, y_test = load_data(n_train, n_test, rng)
-        x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data(n_train, n_test, rng)
-        # x_train, y_train, x_test, y_test = load_moments(n_train, n_test, rng)
-        # x_train, y_train, x_test, y_test = load_IC_data(n_train, n_test, rng)
+        # x_train, y_train, x_test, y_test = load_data(n_train, n_test, rng) # Loading digits (JAX-wrapped)
+        x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data(n_train, n_test, rng) # Loading digits
+        # x_train, y_train, x_test, y_test = load_moments(n_train, n_test, rng) # Loading moments
+        # x_train, y_train, x_test, y_test = load_IC_data(n_train, n_test, rng) # Loading IC data
 
         compute_cost_lambda = lambda w, wl, f, l: self.compute_cost(w, wl, f, l)
+        # compute_cost_lambda = lambda self, w, wl, f, l: self.compute_cost(w, wl, f, l) # *1*
+        # compute_cost_lambda = lambda w, wl, f, l: self.compute_cost(self w, wl, f, l) # *2*
         value_and_grad = jax.jit(jax.value_and_grad(compute_cost_lambda, argnums=[0, 1]))
 
         weights, weights_last = self.init_weights()
@@ -870,10 +890,11 @@ class TrainQC(DrawQC):
         test_acc_epochs = jnp.asarray(test_acc_epochs)
         '''
         # Create JAX array for 'n_train':
+        n_train_list = [n_train] * n_epochs # original "n_train"
+        n_train_arr = jnp.asarray(n_train_list) # JAX "n_train"
         # n_train_arr = jnp.full(n_epochs, n_train)
-        n_train_list = [n_train] * n_epochs
-        n_train_arr = jnp.array(n_train_list)
 
+        '''
         train_dict = dict(
             n_train=[n_train] * n_epochs,
             step=jnp.arange(1, n_epochs + 1, dtype=int), # NP -> JNP
@@ -882,8 +903,7 @@ class TrainQC(DrawQC):
             test_cost=test_cost_epochs,
             test_acc=test_acc_epochs,
         )
-        # n_train = n_train_arr
-
+        # For functionality check:
         # TYPE (DICTIONARY):
         print(f"train_dict: type = {type(train_dict)}")
 
@@ -891,10 +911,11 @@ class TrainQC(DrawQC):
         print(f"train_dict shapes and types:")
         for key, value in train_dict.items():
             print(f"{key}: shape = {jnp.shape(value)}, type = {type(value)}") # NP -> JNP
-
+        '''
+            
         return dict(
             n_train=n_train_arr,
-            step=jnp.arange(1, n_epochs + 1, dtype=int), # NP -> JNP
+            step=np.arange(1, n_epochs + 1, dtype=int), # NP -> JNP
             train_cost=train_cost_epochs,
             train_acc=train_acc_epochs,
             test_cost=test_cost_epochs,
@@ -902,7 +923,7 @@ class TrainQC(DrawQC):
         )
 
     # ******* RUN QCNN TRAINING ITERATIONS *******:
-    @jax.jit
+    # @jax.jit
     def run_iterations(self, n_train, n_test, n_epochs):
         """
         Runs selected number of iterations of training loop for the QCNN model.
@@ -929,7 +950,7 @@ class TrainQC(DrawQC):
         return results_df
     
     # ******* COMPUTE AGGREGATED TRAINING RESULTS *******:
-    @jax.jit
+    # @jax.jit
     def compute_aggregated_results(self, n_train, n_test, n_epochs):
         """
         Function to run training iterations for multiple sizes and aggregate the results.
@@ -940,9 +961,9 @@ class TrainQC(DrawQC):
         # n_test = self.num_test
         # n_train = self.num_train
 
-        n_test = 2
-        n_train = 2
-        n_epochs = 100
+        # n_test = 2
+        # n_train = 2
+        # n_epochs = 100
         # n_reps = 10
 
         # run training for multiple sizes
