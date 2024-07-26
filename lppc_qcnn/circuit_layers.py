@@ -1,48 +1,54 @@
 ########################################### CIRCUIT_LAYERS.PY ###########################################
 
-### ***** IMPORTS / DEPENDENCIES *****:
+#### ***** IMPORTS / DEPENDENCIES *****:
 
-## PLOTTING:
+### *** PLOTTING ***:
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-## PENNYLANE:
+### *** PENNYLANE ***:
 import pennylane as qml
 import pennylane.numpy as pnp
 
-## DATA:
+### *** DATA ***:
 import numpy as np
 import pandas as pd
 import seaborn as sns
 sns.set()
 
-## JAX:
+### *** JAX ***:
 import jax;
 ## JAX CONFIGURATIONS:
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import jax.experimental.sparse as jsp # (NOT ACCESSED)
-import jax.scipy.linalg as jsl # (NOT ACCESSED)
-
+# import jax.experimental.sparse as jsp # (NOT ACCESSED)
+# import jax.scipy.linalg as jsl # (NOT ACCESSED)
+## OTHER (JAX):
 import optax  # (Optimization using Jax)
 
 # -------------------------------------------------
-## TORCHVISION (FOR CIRCUIT):
+### *** TORCHVISION (FOR CIRCUIT) ***:
 # import torch # (NOT ACCESSED)
 # from torchvision import datasets, transforms
 # from torch.utils.data import DataLoader
 
-## TENSORFLOW (FOR CIRCUIT):
+### *** TENSORFLOW (FOR CIRCUIT) ***:
 # import tensorflow as tf
 # from tensorflow.keras.datasets import mnist
 # -------------------------------------------------
 
-## RNG:
+### *** RNG ***:
 seed = 0
-rng = np.random.default_rng(seed=seed) # ORIGINAL
-rng_jax = jax.random.PRNGKey(seed=seed) # *1* using JAX
-rng_jax_arr = jnp.array(jax.random.PRNGKey(seed=seed)) # *2* using JAX
+'''
+# rng = np.random.default_rng(seed=seed) # ORIGINAL (keep commented out if using JAX)
+# Using NumPy (base):
+rng_np = np.random.default_rng(seed=seed) # *1* (NumPy)
+rng_np_arr = jnp.array(np.random.default_rng(seed=seed)) # *2* (NumPy wrapped with JAX)
+# Using JAX (base):
+rng_jax = jax.random.PRNGKey(seed=seed) # *1* (JAX)
+rng_jax_arr = jnp.array(rng_jax) # *2* (JAX)
+'''
 
 ## OTHER:
 # from glob import glob
@@ -787,23 +793,6 @@ class TrainQC(DrawQC):
         """
         Computes the output of the corresponding label in the QCNN model.
         """
-        '''
-        ### ***** ATTEMPT 1 (Calling QCNN) *****:
-        cost = lambda weights, weights_last, feature, label: self.conv_net(self.qcnn_layers, weights,
-                                                                weights_last, feature)[
-            label
-        ]
-        # qc_layers = LayersQC() # (NOT RECOMMENDED: required in 'conv_net arg?)
-
-        ### ***** ATTEMPT 2 (Calling QCNN) *****:
-        # Define lambda cost function by passing LayersQC() in arguments:
-        # (1) add "layers_qc" to arguments, first one after self
-        # (2):
-        cost = lambda weights, weights_last, feature, label: layers_qc.conv_net(layers_qc, weights, weights_last, feature)[
-            label
-        ]
-        # (Note: LayersQC() instantiated in class as "qcnn_layers = LayersQC()", above the __init__)
-        '''
         # Instantiate 'LayersQC' class instance:
         qc_layers = LayersQC()
 
@@ -854,39 +843,51 @@ class TrainQC(DrawQC):
     # ******* NEW TRAIN QCNN *******:
     @staticmethod
     @jax.jit # (Both JAX and JIT)
-    def train_qcnn(n_train, n_test, n_epochs):
+    def train_qcnn(num_train, num_test, num_epochs):
         """
         Trains data for the QCNN model.
         """
-        # SELF:
+        ## SELF:
         # n_test = self.num_test
         # n_train = self.num_train
+        num_train = jnp.int64(num_train) # Ensure dummy variable access (for functionality)
+        num_test = jnp.int64(num_test) # Ensure dummy variable access (for functionality)
+        num_epochs = jnp.int64(num_epochs) # Ensure dummy variable access (for functionality)
+        # num_reps = jnp.int64(10)
 
-        # n_test = 2
-        # n_train = 2
-        # n_epochs = 100
+        n_test = 2
+        n_train = 2
+        n_epochs = 100
+        # n_reps = 10
 
         '''
-        ### ***** ATTEMPT 1 (Wrapping load_digits_data with JAX) *****:
-        # Define wrapper function for DATA to call method and apply jax:
-        # (Note: should not be required, as x_train, y_train, x_test, y_test are all of type 
-        # "<class 'jaxlib.xla_extension.ArrayImpl'>".)
-        @jax.jit
-        def load_data(n_train, n_test):
-            return LoadDataQC.load_digits_data(n_train, n_test, rng)
-        
-        # Implementation:
-        x_train, y_train, x_test, y_test = load_data(n_train, n_test, rng) # Loading digits (JAX-wrapped)
+        ## SET RNG TYPE:
+        rng_type = "jax" # default rng
+
+        # Instantiate rng based on rng_type:
+        if rng_type == "jax":
+            rng_jax = jax.random.PRNGKey(seed=seed)  # *1* (JAX)
+            rng = rng_jax
+        elif rng_type == "jaxarray":
+            rng_jax_arr = jnp.array(jax.random.PRNGKey(seed=seed))  # *2* (JAX)
+            rng = rng_jax_arr
+        else:
+            rng_orig = np.random.default_rng(seed=seed)  # ORIGINAL
+            print("Invalid rng_type; defaulting to NumPy random generator (rng_orig)")
+            rng = rng_orig
         '''
 
-        ## DATA (DIGITS):
-        load_digits_jit = jax.jit(LoadDataQC.load_digits_data, static_argnums=(0, 1))
-        x_train, y_train, x_test, y_test = load_digits_jit(n_train, n_test, rng) # digits (JAX)
+        # Define RNG:
+        rng_jax = jax.random.PRNGKey(seed=seed)  # *1* (JAX)
+        rng = rng_jax
+
+        ## DIGITS DATA (ORIGINAL):
         # x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data(n_train, n_test, rng) # Loading digits
+        x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data_jaxV2(n_train, n_test, rng) # Loading digits
 
-        ## DATA (OTHER):
-        # x_train, y_train, x_test, y_test = load_moments(n_train, n_test, rng) # Loading moments
-        # x_train, y_train, x_test, y_test = load_IC_data(n_train, n_test, rng) # Loading IC data
+        ## DIGITS DATA (JAX):
+        # load_digits_jit = jax.jit(LoadDataQC.load_digits_data, static_argnums=(0, 1))
+        # x_train, y_train, x_test, y_test = load_digits_jit(n_train, n_test, rng) # digits (JAX)
 
         # Define Lambda Cost Function
         compute_cost_lambda = lambda w, wl, f, l: TrainQC.compute_cost(w, wl, f, l)
@@ -930,26 +931,8 @@ class TrainQC(DrawQC):
         '''
         # Create JAX array for 'n_train':
         n_train_list = [n_train] * n_epochs # ORIGINAL ('n_train')
+        # n_train_arr = np.array(n_train_list)
         n_train_arr = jnp.asarray(n_train_list) # WITH JAX ('n_train')
-
-        '''
-        ### ***** FOR FUNCTIONALITY CHECK *****:
-        train_dict = dict(
-            n_train=[n_train] * n_epochs,
-            step=jnp.arange(1, n_epochs + 1, dtype=int), # NP -> JNP
-            train_cost=train_cost_epochs,
-            train_acc=train_acc_epochs,
-            test_cost=test_cost_epochs,
-            test_acc=test_acc_epochs,
-        )
-        # TYPE (DICTIONARY):
-        print(f"train_dict: type = {type(train_dict)}")
-
-        # SHAPES AND TYPES (DICTIONARY ITEMS):
-        print(f"train_dict shapes and types:")
-        for key, value in train_dict.items():
-            print(f"{key}: shape = {jnp.shape(value)}, type = {type(value)}") # NP -> JNP
-        '''
             
         return dict(
             n_train=n_train_arr,
@@ -963,26 +946,34 @@ class TrainQC(DrawQC):
     # @jax.jit # (JIT-compiled use)
     # ******* RUN QCNN TRAINING ITERATIONS *******:
     @staticmethod
-    def run_iterations(n_train, n_test, n_epochs):
+    def run_iterations(num_train, num_test, num_epochs):
         """
         Runs selected number of iterations of training loop for the QCNN model.
+
+        (Note: 'num_train', 'num_test', 'num_epochs' currently passed as dummy variables for
+        functionality purposes, 'n_train', 'n_test', 'n_epochs' defined within each function with
+        type jnp.int64. Change 'num' in variable name to 'n' to pass through function(s).)
         """
-        # SELF:
+        ## SELF:
         # n_test = self.num_test
         # n_train = self.num_train
+        num_train = jnp.int64(num_train) # Ensure dummy variable access (for functionality)
+        num_test = jnp.int64(num_test) # Ensure dummy variable access (for functionality)
+        num_epochs = jnp.int64(num_epochs) # Ensure dummy variable access (for functionality)
+        # num_reps = jnp.int64(10)
 
         n_test = 2
         n_train = 2
         n_epochs = 100
         n_reps = 10
 
+        # original (below): columns=["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
         results_df = pd.DataFrame(
             columns=["n_train", "step", "train_cost", "train_acc", "test_cost", "test_acc"]
         )
-        # original: columns=["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
 
         for _ in range(n_reps):
-            results = TrainQC.train_qcnn(n_train=n_train, n_test=n_test, n_epochs=n_epochs)
+            results = TrainQC.train_qcnn(num_train=n_train, num_test=n_test, num_epochs=n_epochs)
             results_df = pd.concat(
                 [results_df, pd.DataFrame.from_dict(results)], axis=0, ignore_index=True
             )
@@ -992,34 +983,38 @@ class TrainQC(DrawQC):
     # @jax.jit # (JIT-compiled use)
     # ******* COMPUTE AGGREGATED TRAINING RESULTS *******:
     @staticmethod
-    def compute_aggregated_results(n_train, n_test, n_epochs):
+    def compute_aggregated_results(num_train, num_test, num_epochs):
         """
         Function to run training iterations for multiple sizes and aggregate the results.
         
-        Args:
-        -> n_train: Number of training samples to start with
+        (Note: 'num_train', 'num_test', 'num_epochs' currently passed as dummy variables for
+        functionality purposes, 'n_train', 'n_test', 'n_epochs' defined within each function with
+        type jnp.int64. Change 'num' in variable name to 'n' to pass through function(s).)
         """
-        # SELF:
+        ## SELF:
         # n_test = self.num_test
         # n_train = self.num_train
+        num_train = jnp.int64(num_train) # Ensure dummy variable access (for functionality)
+        num_test = jnp.int64(num_test) # Ensure dummy variable access (for functionality)
+        num_epochs = jnp.int64(num_epochs) # Ensure dummy variable access (for functionality)
 
-        # n_test = 2
-        # n_train = 2
-        # n_epochs = 100
+        n_test = 2
+        n_train = 2
+        n_epochs = 100
         # n_reps = 10
 
         # run training for multiple sizes
         # train_sizes = [2, 5, 10, 20, 40, 80]
         train_sizes = [2]
-        results_df = TrainQC.run_iterations(n_train=n_train, n_test=n_test, n_epochs=n_epochs)
+        results_df = TrainQC.run_iterations(num_train=n_train, num_test=n_test, num_epochs=n_epochs)
         for n_train in train_sizes[1:]:
-            results_df = pd.concat([results_df, TrainQC.run_iterations(n_train=n_train, n_test=n_test, n_epochs=n_epochs)])
+            results_df = pd.concat([results_df, TrainQC.run_iterations(num_train=n_train, num_test=n_test, num_epochs=n_epochs)])
         
         # return results_df
     
     # ******* PLOT AGGREGATED TRAINING RESULTS *******:
     @staticmethod
-    def plot_aggregated_results(results_df, n_train=2, steps=100, 
+    def plot_aggregated_results(results_df, num_train, steps=100, 
                             title_loss='Train and Test Losses', 
                             title_accuracy='Train and Test Accuracies',
                             markevery=10):
@@ -1033,9 +1028,18 @@ class TrainQC(DrawQC):
         -> title_accuracy: Title for the accuracy plot (Optional)
         -> markevery: Interval at which markers are displayed (Optional)
         """
+        ## SELF:
+        # n_train = self.num_train
+        num_train = jnp.int64(num_train) # Ensure dummy variable access (for functionality)
+
+        # n_test = 2
+        n_train = 2
+        # n_train = jnp.int64(2)
+        # n_epochs = 100
+        # n_reps = 10
+
         train_sizes = [2, 5, 10]
         # train_sizes = [2]
-        # n_test = 2
 
         # aggregate dataframe
         df_agg = results_df.groupby(["n_train", "step"]).agg(["mean", "std"])

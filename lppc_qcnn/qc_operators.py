@@ -1,38 +1,32 @@
 ############################################ QC_OPERATORS.PY ############################################
 
-### ***** IMPORTS / DEPENDENCIES *****:
+#### ***** IMPORTS / DEPENDENCIES *****:
 
-## PENNYLANE:
+### *** PENNYLANE ***:
 import pennylane as qml
 from pennylane import numpy as np
 
-## JAX:
+### *** JAX ***:
 import jax;
 ## JAX CONFIGURATIONS:
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 # import jax.experimental.sparse as jsp # (NOT ACCESSED)
-import jax.scipy.linalg as jsl # (NOT ACCESSED)
+import jax.scipy.linalg as jsl
 
 # -------------------------------------------------
-## TORCHVISION (FOR OPERATORS):
+### *** TORCHVISION (FOR OPERATORS) ***:
 import torch 
 # from torchvision import datasets, transforms
 # from torch.utils.data import DataLoader
 
-## TENSORFLOW (FOR OPERATORS):
+### *** TENSORFLOW (FOR OPERATORS) ***:
 # import tensorflow as tf
 # from tensorflow.keras.datasets import mnist
 # -------------------------------------------------
 
-## RNG:
-seed = 0
-rng = np.random.default_rng(seed=seed) # ORIGINAL
-rng_jax = jax.random.PRNGKey(seed=seed) # *1* using JAX
-rng_jax_arr = jnp.array(jax.random.PRNGKey(seed=seed)) # *2* using JAX
-
-## OTHER:
+### *** OTHER ***:
 # from glob import glob
 # from scipy.linalg import expm # (NOT ACCESSED)
 
