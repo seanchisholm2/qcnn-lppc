@@ -3,7 +3,7 @@
 ### ***** IMPORTS / DEPENDENCIES *****:
 
 ## PLOTTING:
-import matplotlib as mpl # (NOT ACCESSED)
+import matplotlib
 import matplotlib.pyplot as plt
 
 ## PENNYLANE:
@@ -12,6 +12,8 @@ from pennylane import numpy as np
 ## DATA:
 from sklearn import datasets
 import seaborn as sns
+sns.set()
+from functools import partial
 
 ## JAX:
 import jax;
@@ -19,23 +21,30 @@ import jax;
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import jax.experimental.sparse as jsp # (NOT ACCESSED)
+# import jax.experimental.sparse as jsp # (NOT ACCESSED)
 import jax.scipy.linalg as jsl # (NOT ACCESSED)
+from jax import lax
 
-## OTHER:
-sns.set()
-seed = 0
-rng = np.random.default_rng(seed=seed)
-
+# -------------------------------------------------------
 ## TORCHVISION (FOR DATA):
 import torch
-# from torchvision import transforms
-# from torchvision import datasets
-# from torch.utils.data import DataLoader
+from torchvision import datasets
+from torchvision import transforms
+from torch.utils.data import DataLoader, TensorDataset
 
 ## TENSORFLOW (FOR DATA):
 # import tensorflow as tf
 # from tensorflow.keras.datasets import mnist
+# -------------------------------------------------------
+
+## RNG:
+seed = 0
+rng = np.random.default_rng(seed=seed) # ORIGINAL
+rng_jax = jax.random.PRNGKey(seed=seed) # *1* using JAX
+rng_jax_arr = jnp.array(jax.random.PRNGKey(seed=seed)) # *2* using JAX
+
+## OTHER:
+# from glob import glob
 
 ### ***** PACKAGE(S) *****:
 # ************************************************************************************
@@ -55,7 +64,7 @@ import torch
 # ============================================================
 #                NEW (MNIST) DATA LOADING CLASS
 # ============================================================
- 
+  
 
 class LoadDataQC:
     """
@@ -71,13 +80,14 @@ class LoadDataQC:
 
     # ******* NEW LOADING DIGITS DATA *******:
     @staticmethod
-    def load_digits_data(num_train, num_test, rng):
+    # @partial(jax.jit, static_argnums=(0, 1))
+    def load_digits_data(n_train, n_test, rng):
         """
         Returns training and testing data of the digits dataset.
 
         Args:
-        -> num_train (int): The number of training samples to select from the dataset.
-        -> num_test (int): The number of testing samples to select from the dataset.
+        -> n_train (int): The number of training samples to select from the dataset.
+        -> n_test (int): The number of testing samples to select from the dataset.
         -> rng (numpy.random.Generator): A random number generator instance for reproducibility.
         """
         digits = datasets.load_digits()
@@ -91,10 +101,60 @@ class LoadDataQC:
         features = features / np.linalg.norm(features, axis=1).reshape((-1, 1))
 
         # subsample train and test split
-        train_indices = rng.choice(len(labels), num_train, replace=False)
+        train_indices = rng.choice(len(labels), n_train, replace=False)
         test_indices = rng.choice(
-            np.setdiff1d(range(len(labels)), train_indices), num_test, replace=False
+            np.setdiff1d(range(len(labels)), train_indices), n_test, replace=False
         )
+
+        x_train, y_train = features[train_indices], labels[train_indices]
+        x_test, y_test = features[test_indices], labels[test_indices]
+
+        return (
+            jnp.asarray(x_train),
+            jnp.asarray(y_train),
+            jnp.asarray(x_test),
+            jnp.asarray(y_test),
+        )
+    
+    # ******* NEW LOADING DIGITS DATA (WITH JAX) *******:
+    @staticmethod
+    @partial(jax.jit, static_argnums=(0, 1))
+    def load_digits_data_jax(n_train, n_test, rng):
+        """
+        Returns training and testing data of the digits dataset using jax operations.
+
+        Args:
+        -> n_train (int): The number of training samples to select from the dataset.
+        -> n_test (int): The number of testing samples to select from the dataset.
+        -> rng (jax.random.Generator): A random number generator instance for reproducibility.
+        """
+        digits = datasets.load_digits()
+        features, labels = digits.data, digits.target
+
+        # Convert features and labels to JAX arrays
+        features = jnp.asarray(features)
+        labels = jnp.asarray(labels)
+
+        # only use first two classes
+        mask = (labels == 0) | (labels == 1)
+        features = features[mask]
+        labels = labels[mask]
+
+        # normalize data
+        features = features / jnp.linalg.norm(features, axis=1, keepdims=True)
+
+        # Generate shuffled indices (NEW)
+        rng, subkey = jax.random.split(rng)
+        shuffled_indices = jax.random.permutation(subkey, len(labels))
+
+        n_train = jnp.int64(n_train)
+        n_test = jnp.int64(n_test)
+
+        # subsample train and test split (NEW)
+        # train_indices = shuffled_indices[:n_train] # *1* with JAX
+        train_indices = lax.dynamic_slice(shuffled_indices, (0,), (n_train,)) # *2* with JAX
+        # test_indices = shuffled_indices[num_train:num_train + num_test] # *1* with JAX
+        test_indices = lax.dynamic_slice(shuffled_indices, (n_train,), (n_test,)) # *2* with JAX
 
         x_train, y_train = features[train_indices], labels[train_indices]
         x_test, y_test = features[test_indices], labels[test_indices]
@@ -164,17 +224,18 @@ class LoadDataLPPC:
         """
         # Load MNIST dataset using TensorFlow
         # (Note: Uncomment TensorFlow (FOR DATA) in above imports to use 'mnist'):
-        (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
+        # (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
         
         # (Note: This function uses TensorFlow to import the MNIST dataset, which is 
         # currently not utilized within the QCCN example notebook. Instead, our 
         # notebook imported the MNIST dataset using TorchVision).
         
-        return train_images, train_labels, test_images, test_labels
+        pass
+        # return train_images, train_labels, test_images, test_labels
     
     # ******* LOADING MNIST DATA (TORCHVISION) *******:
     @staticmethod
-    def load_mnist_torch(batch_train, batch_test, root):
+    def load_mnist_torchvision(batch_train, batch_test, root):
         """
         Loads the MNIST dataset and returns training and testing images and 
         labels, using TorchVision.
@@ -191,6 +252,38 @@ class LoadDataLPPC:
         testloader = DataLoader(testset, batch_size=batch_test, shuffle=True)
 
         # Extract Data from Loaders:
+        train_images, train_labels = next(iter(trainloader))
+        test_images, test_labels = next(iter(testloader))
+        
+        return train_images, train_labels, test_images, test_labels
+    
+    def load_mnist_torch(batch_train, batch_test):
+        """
+        Loads the MNIST dataset and returns training and testing images and 
+        labels, using Torch only.
+        """
+        # Define Root:
+        root = './mnist_data'
+
+        # Download MNIST dataset from torch
+        train_data = torch.hub.load('pytorch/vision', 'mnist', split='train', root=root, download=True)
+        test_data = torch.hub.load('pytorch/vision', 'mnist', split='test', root=root, download=True)
+
+        # Extract images and labels from train and test data
+        # train_images = train_data.data.unsqueeze(1).float()
+        train_images = train_data.data.unsqueeze(1).float() / 255.0 # normalized
+        train_labels = train_data.targets
+        # test_images = test_data.data.unsqueeze(1).float()
+        test_images = test_data.data.unsqueeze(1).float() / 255.0 # normalized
+        test_labels = test_data.targets
+
+        # Create TensorDataset and DataLoader
+        trainset = TensorDataset(train_images, train_labels)
+        testset = TensorDataset(test_images, test_labels)
+        trainloader = DataLoader(trainset, batch_size=batch_train, shuffle=True)
+        testloader = DataLoader(testset, batch_size=batch_test, shuffle=True)
+
+        # Extract Data from Loaders
         train_images, train_labels = next(iter(trainloader))
         test_images, test_labels = next(iter(testloader))
         
@@ -278,6 +371,10 @@ class LoadDataLPPC:
         x_test = np.pad(x_test, ((0, 0), (0, (2**n_qubits) - x_test.shape[1])), mode='constant')
 
         return x_train, y_train, x_test, y_test
+    
+'''
+### ***** LOADING DIGITS DATA (JAX MODIFICATIONS) *****:
+'''
 
 
 # **************************************************************************************************
