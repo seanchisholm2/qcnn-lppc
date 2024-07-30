@@ -65,9 +65,118 @@ rng_jax_arr = jnp.array(rng_jax) # *2* (JAX)
 
 
 # ============================================================
-#                NEW (MNIST) DATA LOADING CLASS
+#                  NEW DATA PREPARATION CLASS
 # ============================================================
   
+class DataQCNN:
+    """
+    New class for loading and assessing properties of the MNIST data for quantum 
+    convolutional neural networks (class defined just to assess JAX-related data structure issues,
+    and is not receiving serious detailed construction or support. Using DataQCNN to quickly write
+    functions to assess relevant erros, only if writing the function would be more efficient and
+    organized than not).
+    """
+
+    # ----------------------------------------------------
+    #             DATA ANALYSIS FUNCTIONS (NEW)
+    # ----------------------------------------------------
+
+    # ******* DIGITS DATA ANALYSIS *******:
+    @staticmethod
+    def dataset_structure(package=None):
+        """
+        Checks shape and type of MNIST data features and labels, and datatype of members (without any
+        typecasting or instantiation using ).
+        """
+        # Load digits dataset:
+        digits = datasets.load_digits()
+        features, labels = digits.data, digits.target
+
+        # cast features and labels as array if needed
+        features_jax = jnp.asarray(features)
+        labels_jax = jnp.asarray(labels)
+
+        if package == 'numpy':
+            # Print relevant attributes:
+            print(f"------------NUMPY------------")
+            print(f"___Shape+Type___:")
+            print(f"• FEATURES type:  {type(features)}  | shape:  {features.shape}")
+            print(f"• LABELS type:  {type(labels)}  | shape:  {labels.shape}")
+            print(f"___DataType___:")
+            print(f"• FEATURES dtype:  {features.dtype}  | class type:  {type(features[0])}")
+            print(f"• LABELS dtype:  {labels.dtype}  | class type:  {type(labels[0])}")
+            print(f"___SIZE___:")
+            print(f"• FEATURES size:  {features.size}")
+            print(f"• LABELS size:  {labels.size}")
+        elif package == 'jax':
+            # Print relevant attributes:
+            print(f"------------JAX------------")
+            print(f"___Shape+Type___:")
+            print(f"• FEATURES type:  {type(features_jax)}  | shape:  {features_jax.shape}")
+            print(f"• LABELS type:  {type(labels_jax)}  | shape:  {labels_jax.shape}")
+            print(f"___DataType___:")
+            print(f"• FEATURES dtype:  {features_jax.dtype}  | class type:  {type(features_jax[0])}")
+            print(f"• LABELS dtype:  {labels_jax.dtype}  | class type:  {type(labels_jax[0])}")
+            print(f"___SIZE___:")
+            print(f"• FEATURES size:  {features_jax.size}")
+            print(f"• LABELS size:  {labels_jax.size}")
+        else:
+            raise ValueError("package must be either 'jax' or 'numpy'")
+        
+    # ----------------------------------------------------
+    #             DATA ANALYSIS FUNCTIONS (OLD)
+    # ----------------------------------------------------
+        
+     # ******* JAX LOADING DIGITS DATA (DYNAMIC SLICING) *******:
+    @staticmethod
+    @partial(jax.jit, static_argnums=(0, 1))
+    def load_digits_dynamic_slice(n_train, n_test, rng_jax):
+        """
+        Returns training and testing data of the digits dataset using jax operations.
+
+        Args:
+        -> n_train (int): The number of training samples to select from the dataset.
+        -> n_test (int): The number of testing samples to select from the dataset.
+        -> rng_jax (jax.random.Generator): A random number generator instance for reproducibility.
+        """
+        digits = datasets.load_digits()
+        features, labels = digits.data, digits.target
+
+        # convert features and labels to JAX arrays
+        features = jnp.asarray(features)
+        labels = jnp.asarray(labels)
+
+        # only use first two classes
+        mask = (labels == 0) | (labels == 1)
+        features = features[mask]
+        labels = labels[mask]
+
+        # normalize data
+        features = features / jnp.linalg.norm(features, axis=1, keepdims=True)
+
+        # Generate shuffled indices (NEW)
+        rng_jax, subkey = jax.random.split(rng_jax)
+        shuffled_indices = jax.random.permutation(subkey, len(labels))
+
+        n_train = jnp.int64(n_train)
+        n_test = jnp.int64(n_test)
+
+        # subsample train and test split (NEW)
+        # train_indices = shuffled_indices[:n_train] # *1* with JAX
+        train_indices = lax.dynamic_slice(shuffled_indices, (0,), (n_train,)) # *2* with JAX
+        # test_indices = shuffled_indices[num_train:num_train + num_test] # *1* with JAX
+        test_indices = lax.dynamic_slice(shuffled_indices, (n_train,), (n_test,)) # *2* with JAX
+
+        x_train, y_train = features[train_indices], labels[train_indices]
+        x_test, y_test = features[test_indices], labels[test_indices]
+
+        return (
+            jnp.asarray(x_train),
+            jnp.asarray(y_train),
+            jnp.asarray(x_test),
+            jnp.asarray(y_test),
+        )
+
 
 class LoadDataQC:
     """
@@ -80,6 +189,22 @@ class LoadDataQC:
     # ----------------------------------------------------
     #     DATA AND LOADING FUNCTIONS (NEW/ESSENTIAL)
     # ----------------------------------------------------
+
+    # ******* PREPARING QC DATASET *******:
+    @staticmethod
+    def prepare_data():
+        digits = datasets.load_digits()
+        features, labels = digits.data, digits.target
+
+        # Use NumPy for boolean indexing:
+        mask = (labels == 0) | (labels == 1)
+        features = features[mask]
+        labels = labels[mask]
+
+        # normalize data
+        features = features / np.linalg.norm(features, axis=1).reshape((-1, 1))
+
+        return features, labels
 
     # ******* NEW LOADING DIGITS DATA *******:
     @staticmethod
@@ -119,46 +244,54 @@ class LoadDataQC:
             jnp.asarray(y_test),
         )
     
-    # ******* NEW JAX LOADING DIGITS DATA (DYNAMIC SLICING) *******:
+    # ******* JAX LOADING DIGITS DATA (V1) *******:
     @staticmethod
-    @partial(jax.jit, static_argnums=(0, 1))
-    def load_digits_data_jax(n_train, n_test, rng_jax):
+    @partial(jax.jit, static_argnums=(0, 1)) # -> 'num_train' and 'num_test'
+    def load_digits_jax_V1(n_train, n_test):
         """
-        Returns training and testing data of the digits dataset using jax operations.
+        Returns training and testing data of the digits dataset using JAX. Version 1 using jax, which
+        loads the relevant dataset directly within the function.
+        """
 
-        Args:
-        -> n_train (int): The number of training samples to select from the dataset.
-        -> n_test (int): The number of testing samples to select from the dataset.
-        -> rng_jax (jax.random.Generator): A random number generator instance for reproducibility.
-        """
         digits = datasets.load_digits()
         features, labels = digits.data, digits.target
 
-        # Convert features and labels to JAX arrays
+        # convert features and labels to jax arrays
         features = jnp.asarray(features)
         labels = jnp.asarray(labels)
 
         # only use first two classes
-        mask = (labels == 0) | (labels == 1)
+        mask = (labels == 0) | (labels == 1)  # define mask
+        # use mask to filter features and labels
         features = features[mask]
         labels = labels[mask]
 
         # normalize data
-        features = features / jnp.linalg.norm(features, axis=1, keepdims=True)
+        # features = features / jnp.linalg.norm(features, axis=1, keepdims=True)
+        features = features / jnp.linalg.norm(features, axis=1).reshape((-1, 1))
 
-        # Generate shuffled indices (NEW)
-        rng_jax, subkey = jax.random.split(rng_jax)
-        shuffled_indices = jax.random.permutation(subkey, len(labels))
+        # ### *** INDICES ***:
+        seed = 0
+        jax_rng = jax.random.PRNGKey(seed=seed) # JAX rng key
+        # split jax key into training and testing keys
+        train_key, test_key = jax.random.split(jax_rng)
 
-        n_train = jnp.int64(n_train)
-        n_test = jnp.int64(n_test)
+        n_total = labels.shape[0] # total number of labels
 
-        # subsample train and test split (NEW)
-        # train_indices = shuffled_indices[:n_train] # *1* with JAX
-        train_indices = lax.dynamic_slice(shuffled_indices, (0,), (n_train,)) # *2* with JAX
-        # test_indices = shuffled_indices[num_train:num_train + num_test] # *1* with JAX
-        test_indices = lax.dynamic_slice(shuffled_indices, (n_train,), (n_test,)) # *2* with JAX
+        # random permutation for training indices
+        permuted_train = jax.random.permutation(train_key, n_total)
+        train_indices = permuted_train[:n_train]
 
+        # Exclude train_indices from the total indices
+        res_indices = jnp.setdiff1d(jnp.arange(n_total), train_indices)
+
+        idx_total = res_indices.shape[0] # total number of remaining indices
+
+        # random permutation for testing indices
+        permuted_test = jax.random.permutation(test_key, idx_total)
+        test_indices = res_indices[permuted_test[:n_test]]
+
+        # split features and labels into training and testing data
         x_train, y_train = features[train_indices], labels[train_indices]
         x_test, y_test = features[test_indices], labels[test_indices]
 
@@ -169,63 +302,74 @@ class LoadDataQC:
             jnp.asarray(y_test),
         )
     
-    # ******* NEW JAX LOADING DIGITS DATA (SPLITTING) *******:
+    # ******* JAX LOADING DIGITS DATA (V2) *******:
     @staticmethod
-    @jax.jit
-    def load_digits_data_jaxV2(num_train, num_test, rng):
+    # @partial(jax.jit, static_argnums=(0, 1)) # -> 'num_train' and 'num_test'
+    def load_digits_jax_V2(n_train, n_test, features, labels):
         """
-        Returns training and testing data of the digits dataset using JAX (second version).
-
-        Args:
-        -> n_train (int): The number of training samples to select from the dataset.
-        -> n_test (int): The number of testing samples to select from the dataset.
-        -> rng_jax (jax.random.PRNGKey): A random number generator key for reproducibility.
+        Returns training and testing data of the digits dataset using JAX. Version 1 using jax, which
+        assumes that the relevant features and labels of the dataset for the qcnn have already been
+        instantiated, and are passed to the function as arguments.
         """
-        digits = datasets.load_digits()
-        features, labels = digits.data, digits.target
 
-        num_train = jnp.int64(num_train) # dummy variables (for functionality)
-        num_test = jnp.int64(num_test) # dummy variables (for functionality)
-        rng = jnp.asarray(rng) # dummy variables (for functionality)
-
-        ## DEFINE VARIABLES:
-        n_train = jnp.int64(2) # set n_train = 2 (JAX) -> avoid 
-        n_test = jnp.int64(2) # set n_test = 2 (JAX) -> avoid
+        # ### *** INDICES ***:
         seed = 0
-        rng_jax = jax.random.PRNGKey(seed=seed)
-        # rng_jax_arr = jnp.array(jax.random.PRNGKey(seed))
+        jax_rng = jax.random.PRNGKey(seed=seed) # JAX rng key
+        # split jax key into training and testing keys
+        train_key, test_key = jax.random.split(jax_rng)
 
-        # convert features and labels to jax arrays
-        features = jnp.asarray(features)
-        labels = jnp.asarray(labels)
+        # n_total = labels.shape[0] # total number of labels
+        n_total = 64 # (2^n_qubits, 6-qubit system)
 
-        # np -> jax binary classification (ORIGINAL)
-        features = features[jnp.where((labels == 0) | (labels == 1))]
-        labels = labels[jnp.where((labels == 0) | (labels == 1))]
+        # random permutation for training indices
+        permuted_train = jax.random.permutation(train_key, n_total)
+        train_indices = permuted_train[:n_train]
 
-        '''
-        # np -> jax binary classification (NEW)
-        mask = (labels == 0) | (labels == 1)
-        jax_idx = jnp.where(mask)[0]  # Convert boolean mask to indices
-        features = features[jax_idx]
-        labels = labels[jax_idx]
-        '''
+        # Exclude train_indices from the total indices
+        res_indices = jnp.setdiff1d(jnp.arange(n_total), train_indices)
 
-        # normalize data
-        features = features / jnp.linalg.norm(features, axis=1, keepdims=True)
+        idx_total = res_indices.shape[0] # total number of remaining indices
 
-        # ### *** TRAIN INDICES ***:
-        rng_jax, train_key = jax.random.split(rng_jax)
-        permuted_indices = jax.random.permutation(train_key, len(labels))
-        train_indices = permuted_indices[:n_train]
-
-        # ### *** TEST INDICES (not in train) ***:
-        res_indices = permuted_indices[n_train:]
-        rng_jax, test_key = jax.random.split(rng_jax)
-        permuted_res_indices = jax.random.permutation(test_key, len(res_indices))
-        test_indices = permuted_res_indices[:n_test]
+        # random permutation for testing indices
+        permuted_test = jax.random.permutation(test_key, idx_total)
+        test_indices = res_indices[permuted_test[:n_test]]
 
         # split features and labels into training and testing data
+        x_train, y_train = features[train_indices], labels[train_indices]
+        x_test, y_test = features[test_indices], labels[test_indices]
+
+        return (
+            jnp.asarray(x_train),
+            jnp.asarray(y_train),
+            jnp.asarray(x_test),
+            jnp.asarray(y_test),
+        )
+    
+    # ******* JAX LOADING DIGITS DATA (V3) *******:
+    @staticmethod
+    # @partial(jax.jit, static_argnums=(0, 1)) # -> 'num_train' and 'num_test'
+    def load_digits_jax_V3(n_train, n_test, features, labels):
+        """
+        Returns training and testing data of the digits dataset using JAX. Version 1 using jax, which
+        assumes that the relevant features and labels of the dataset for the qcnn have already been
+        instantiated, and are passed to the function as arguments. Unlike V2, this version omits the
+        use of jnp.setdiff1d and directly shuffles indices instead.
+        """
+
+        # ### *** INDICES ***:
+        seed = 0
+        jax_rng = jax.random.PRNGKey(seed=seed) # JAX rng key
+
+        # n_total = labels.shape[0] # total number of labels
+        n_total = 64 # (2^n_qubits, 6-qubit system) -> EQUAL TO LENGTH OF 'LABELS'
+
+        # shuffle indices
+        shuffled_indices = jax.random.permutation(jax_rng, n_total)
+
+        # split indices for training and testing
+        train_indices = shuffled_indices[:n_train]
+        test_indices = shuffled_indices[n_train:n_train + n_test]
+
         x_train, y_train = features[train_indices], labels[train_indices]
         x_test, y_test = features[test_indices], labels[test_indices]
 

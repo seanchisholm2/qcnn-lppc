@@ -88,7 +88,8 @@ class LayersQC:
     network (LPPC).
     """
     # DEVICE:
-    device = qml.device("default.qubit", wires=6)
+    device = qml.device('default.qubit.jax', wires=6)
+    # device = qml.device("default.qubit", wires=6)
     # device = qml.device("default.mixed", wires=6)
 
     def __init__(self):
@@ -328,7 +329,7 @@ class LayersQC:
         qml.QubitUnitary(fc_op, wires=wires)
 
     # ******* QUANTUM CIRCUIT *******:
-    @qml.qnode(device)
+    @qml.qnode(device, interface='jax')
     def conv_net(self, weights, last_layer_weights, features):
         """
         Defines the QCNN circuit.
@@ -806,7 +807,7 @@ class TrainQC(DrawQC):
 
     # ******* NEW COMPUTE ACCURACY *******:
     @staticmethod
-    @jax.jit # (Both JAX and JIT)
+    # @jax.jit # (Both JAX and JIT)
     def compute_accuracy(weights, weights_last, features, labels):
         """
         Computes the accuracy over the provided features and labels.
@@ -817,7 +818,7 @@ class TrainQC(DrawQC):
 
     # ******* NEW COMPUTE COST *******:
     @staticmethod
-    @jax.jit # (Both JAX and JIT)
+    # @jax.jit # (Both JAX and JIT)
     def compute_cost(weights, weights_last, features, labels):
         """
         Computes the cost over the provided features and labels.
@@ -841,60 +842,56 @@ class TrainQC(DrawQC):
         return jnp.array(weights), jnp.array(weights_last)
     
     # ******* NEW TRAIN QCNN *******:
+    # @jax.jit # (Both JAX and JIT)
     @staticmethod
-    @jax.jit # (Both JAX and JIT)
     def train_qcnn(num_train, num_test, num_epochs):
         """
         Trains data for the QCNN model.
         """
-        ## SELF:
-        # n_test = self.num_test
-        # n_train = self.num_train
-        num_train = jnp.int64(num_train) # Ensure dummy variable access (for functionality)
-        num_test = jnp.int64(num_test) # Ensure dummy variable access (for functionality)
-        num_epochs = jnp.int64(num_epochs) # Ensure dummy variable access (for functionality)
-        # num_reps = jnp.int64(10)
+        #---------------------------------------------------
+        # Convert params to class 'jax':
+        # print(f"-> 'num_train': {type(num_train)}")
+        # print(f"-> 'num_test': {type(num_test)}")
+        # print(f"-> 'num_epochs': {type(num_epochs)}")
+        num_train = jnp.int64(num_train)
+        num_test = jnp.int64(num_test)
+        num_epochs = jnp.int64(num_epochs)
+        #---------------------------------------------------
 
-        n_test = 2
-        n_train = 2
-        n_epochs = 100
-        # n_reps = 10
+        n_test = 2      # -> 'num_train' (static value)
+        n_train = 2     # -> 'num_test' (static value)
+        n_epochs = 100  # -> 'num_epochs' (static value)
 
-        '''
-        ## SET RNG TYPE:
-        rng_type = "jax" # default rng
-
-        # Instantiate rng based on rng_type:
-        if rng_type == "jax":
-            rng_jax = jax.random.PRNGKey(seed=seed)  # *1* (JAX)
-            rng = rng_jax
-        elif rng_type == "jaxarray":
-            rng_jax_arr = jnp.array(jax.random.PRNGKey(seed=seed))  # *2* (JAX)
-            rng = rng_jax_arr
-        else:
-            rng_orig = np.random.default_rng(seed=seed)  # ORIGINAL
-            print("Invalid rng_type; defaulting to NumPy random generator (rng_orig)")
-            rng = rng_orig
-        '''
+        # Prepare data (NumPy)
+        features_np, labels_np = LoadDataQC.prepare_data()
+        features = jnp.array(features_np) # NP -> JAX Arrays
+        labels = jnp.array(labels_np) # NP -> JAX Arrays
 
         # Define RNG:
-        rng_jax = jax.random.PRNGKey(seed=seed)  # *1* (JAX)
-        rng = rng_jax
+        # rng_jax = jax.random.PRNGKey(seed=seed)  # *1* (JAX)
+        # rng = rng_jax
 
-        ## DIGITS DATA (ORIGINAL):
-        # x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data(n_train, n_test, rng) # Loading digits
-        x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data_jaxV2(n_train, n_test, rng) # Loading digits
+        ## JAX.JIT CONFIGURATION:
+        # ----------------------------------------------------------------------------------------------------
+        use_wrapped_version_train = False  # TRUE -> jax.jit-wrapped version, FALSE -> direct call
 
-        ## DIGITS DATA (JAX):
-        # load_digits_jit = jax.jit(LoadDataQC.load_digits_data, static_argnums=(0, 1))
-        # x_train, y_train, x_test, y_test = load_digits_jit(n_train, n_test, rng) # digits (JAX)
+        ## TRUE (JAX.JIT-WRAPPED):
+        if use_wrapped_version_train is True:
+            # Load data using wrapped function:
+            load_digits_jax_V3_wrapped = jax.jit(LoadDataQC.load_digits_jax_V3)
+            x_train, y_train, x_test, y_test = load_digits_jax_V3_wrapped(n_train, n_test, features, labels)
+        # FALSE (DIRECT CALL):
+        else:
+            x_train, y_train, x_test, y_test = LoadDataQC.load_digits_jax_V3(n_train=n_train, n_test=n_test,
+                                                                            features=features, labels=labels)
+            # x_train, y_train, x_test, y_test = LoadDataQC.load_digits_jax_V1(n_train, n_test) # JAX *1*
+            # x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data(n_train, n_test, rng)
+        # ----------------------------------------------------------------------------------------------------
 
-        # Define Lambda Cost Function
+        # Define lambda cost function
         compute_cost_lambda = lambda w, wl, f, l: TrainQC.compute_cost(w, wl, f, l)
-        # compute_cost_lambda = lambda self, w, wl, f, l: self.compute_cost(w, wl, f, l) # *1*
-        # compute_cost_lambda = lambda w, wl, f, l: self.compute_cost(self w, wl, f, l) # *2*
 
-        # Update 'value_and_grad' with Lambda Cost Function:
+        # Update 'value_and_grad', weights with lambda cost:
         value_and_grad = jax.jit(jax.value_and_grad(compute_cost_lambda, argnums=[0, 1]))
 
         weights, weights_last = TrainQC.init_weights()
@@ -921,21 +918,21 @@ class TrainQC(DrawQC):
             test_cost = 1.0 - jnp.sum(test_out) / len(test_out)
             test_cost_epochs.append(test_cost)
 
+        # Convert lists to JAX arrays (if needed):
         '''
-        # Convert lists to JAX arrays:
         n_train_arr = jnp.full(n_epochs, n_train)
         train_cost_epochs = jnp.asarray(train_cost_epochs)
         train_acc_epochs = jnp.asarray(train_acc_epochs)
         test_cost_epochs = jnp.asarray(test_cost_epochs)
         test_acc_epochs = jnp.asarray(test_acc_epochs)
         '''
+
         # Create JAX array for 'n_train':
         n_train_list = [n_train] * n_epochs # ORIGINAL ('n_train')
-        # n_train_arr = np.array(n_train_list)
-        n_train_arr = jnp.asarray(n_train_list) # WITH JAX ('n_train')
+        # n_train_arr = jnp.asarray(n_train_list) # JAX ('n_train')
             
         return dict(
-            n_train=n_train_arr,
+            n_train=n_train_list,
             step=jnp.arange(1, n_epochs + 1, dtype=int), # NP -> JNP
             train_cost=train_cost_epochs,
             train_acc=train_acc_epochs,
@@ -954,17 +951,19 @@ class TrainQC(DrawQC):
         functionality purposes, 'n_train', 'n_test', 'n_epochs' defined within each function with
         type jnp.int64. Change 'num' in variable name to 'n' to pass through function(s).)
         """
-        ## SELF:
-        # n_test = self.num_test
-        # n_train = self.num_train
-        num_train = jnp.int64(num_train) # Ensure dummy variable access (for functionality)
-        num_test = jnp.int64(num_test) # Ensure dummy variable access (for functionality)
-        num_epochs = jnp.int64(num_epochs) # Ensure dummy variable access (for functionality)
-        # num_reps = jnp.int64(10)
+        #---------------------------------------------------
+        # Convert params to class 'jax':
+        # print(f"-> 'num_train': {type(num_train)}")
+        # print(f"-> 'num_test': {type(num_test)}")
+        # print(f"-> 'num_epochs': {type(num_epochs)}")
+        num_train = jnp.int64(num_train)
+        num_test = jnp.int64(num_test)
+        num_epochs = jnp.int64(num_epochs)
+        #---------------------------------------------------
 
-        n_test = 2
-        n_train = 2
-        n_epochs = 100
+        n_test = 2      # -> 'num_train' (static value)
+        n_train = 2     # -> 'num_test' (static value)
+        n_epochs = 100  # -> 'num_epochs' (static value)
         n_reps = 10
 
         # original (below): columns=["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
@@ -978,7 +977,7 @@ class TrainQC(DrawQC):
                 [results_df, pd.DataFrame.from_dict(results)], axis=0, ignore_index=True
             )
 
-        return results_df
+        return results_df # (commented out?)
     
     # @jax.jit # (JIT-compiled use)
     # ******* COMPUTE AGGREGATED TRAINING RESULTS *******:
@@ -991,16 +990,20 @@ class TrainQC(DrawQC):
         functionality purposes, 'n_train', 'n_test', 'n_epochs' defined within each function with
         type jnp.int64. Change 'num' in variable name to 'n' to pass through function(s).)
         """
-        ## SELF:
-        # n_test = self.num_test
-        # n_train = self.num_train
-        num_train = jnp.int64(num_train) # Ensure dummy variable access (for functionality)
-        num_test = jnp.int64(num_test) # Ensure dummy variable access (for functionality)
-        num_epochs = jnp.int64(num_epochs) # Ensure dummy variable access (for functionality)
 
-        n_test = 2
-        n_train = 2
-        n_epochs = 100
+        #---------------------------------------------------
+        # Convert params to class 'jax':
+        # print(f"-> 'num_train': {type(num_train)}")
+        # print(f"-> 'num_test': {type(num_test)}")
+        # print(f"-> 'num_epochs': {type(num_epochs)}")
+        num_train = jnp.int64(num_train)
+        num_test = jnp.int64(num_test)
+        num_epochs = jnp.int64(num_epochs)
+        #---------------------------------------------------
+
+        n_test = 2      # -> 'num_train' (static value)
+        n_train = 2     # -> 'num_test' (static value)
+        n_epochs = 100  # -> 'num_epochs' (static value)
         # n_reps = 10
 
         # run training for multiple sizes
@@ -1008,9 +1011,10 @@ class TrainQC(DrawQC):
         train_sizes = [2]
         results_df = TrainQC.run_iterations(num_train=n_train, num_test=n_test, num_epochs=n_epochs)
         for n_train in train_sizes[1:]:
-            results_df = pd.concat([results_df, TrainQC.run_iterations(num_train=n_train, num_test=n_test, num_epochs=n_epochs)])
+            results_df = pd.concat([results_df, TrainQC.run_iterations(num_train=n_train, num_test=n_test,
+                                                                       num_epochs=n_epochs)])
         
-        # return results_df
+        return results_df
     
     # ******* PLOT AGGREGATED TRAINING RESULTS *******:
     @staticmethod
@@ -1028,9 +1032,11 @@ class TrainQC(DrawQC):
         -> title_accuracy: Title for the accuracy plot (Optional)
         -> markevery: Interval at which markers are displayed (Optional)
         """
-        ## SELF:
-        # n_train = self.num_train
-        num_train = jnp.int64(num_train) # Ensure dummy variable access (for functionality)
+        #---------------------------------------------------
+        # Convert params to class 'jax':
+        # print(f"-> 'num_train': {type(num_train)}")
+        num_train = jnp.int64(num_train)
+        #---------------------------------------------------
 
         # n_test = 2
         n_train = 2
