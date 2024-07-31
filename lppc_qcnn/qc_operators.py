@@ -12,7 +12,7 @@ import jax;
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-# import jax.experimental.sparse as jsp # (NOT ACCESSED)
+import jax.experimental.sparse as jsp
 import jax.scipy.linalg as jsl
 
 # -------------------------------------------------
@@ -25,10 +25,6 @@ import torch
 # import tensorflow as tf
 # from tensorflow.keras.datasets import mnist
 # -------------------------------------------------
-
-### *** OTHER ***:
-# from glob import glob
-# from scipy.linalg import expm # (NOT ACCESSED)
 
 ### ***** PACKAGE(S) *****:
 # ************************************************************************************

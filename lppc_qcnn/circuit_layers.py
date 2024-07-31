@@ -22,58 +22,18 @@ import jax;
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-# import jax.experimental.sparse as jsp # (NOT ACCESSED)
-# import jax.scipy.linalg as jsl # (NOT ACCESSED)
 ## OTHER (JAX):
-import optax  # (Optimization using Jax)
-
-# -------------------------------------------------
-### *** TORCHVISION (FOR CIRCUIT) ***:
-# import torch # (NOT ACCESSED)
-# from torchvision import datasets, transforms
-# from torch.utils.data import DataLoader
-
-### *** TENSORFLOW (FOR CIRCUIT) ***:
-# import tensorflow as tf
-# from tensorflow.keras.datasets import mnist
-# -------------------------------------------------
+import optax
 
 ### *** RNG ***:
 seed = 0
-'''
-# rng = np.random.default_rng(seed=seed) # ORIGINAL (keep commented out if using JAX)
-# Using NumPy (base):
-rng_np = np.random.default_rng(seed=seed) # *1* (NumPy)
-rng_np_arr = jnp.array(np.random.default_rng(seed=seed)) # *2* (NumPy wrapped with JAX)
-# Using JAX (base):
-rng_jax = jax.random.PRNGKey(seed=seed) # *1* (JAX)
-rng_jax_arr = jnp.array(rng_jax) # *2* (JAX)
-'''
-
-## OTHER:
-# from glob import glob
 
 ### ***** PACKAGE(S) *****:
 # **********************************************************************************
-# *1* OPERATORS.PY:
-from .qc_operators import QuantumMathOps as qmath_ops # QuantumMathOps() 
-# from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO() # (NOT ACCESSED)
-# Example Usage(s) (Instance Method):
-# -> QuantumMathOps():
-#       qmo_obj = qmath_ops
-#       qmo_obj.sample_function(*args, **kwargs)
-# -> PeguinsQMO():
-#       lppc_qmo_obj = lppc_qmo
-#       lppc_qmo_obj.sample_function(*args, **kwargs)
-#
-# *2* LOAD_QC_DATA.PY:
-# from .load_qc_data import LoadDataLPPC # (STATIC METHOD)
+# *1* FROM OPERATORS.PY:
+from .qc_operators import QuantumMathOps as qmath_ops # (STATIC METHOD)
+# *1* FROM LOAD_QC_DATA.PY:
 from .load_qc_data import LoadDataQC # (STATIC METHOD)
-# Example Usage(s) (Static Method):
-#  -> LoadDataLPPC():
-#       LoadDataLPPC.example_function(*args, **kwargs)
-#  -> LoadDataQC():
-#       LoadDataQC.sample_function(*args, **kwargs)
 # **********************************************************************************
 
 
@@ -87,20 +47,23 @@ class LayersQC:
     Contains all relevant circuit and layer functions for the quantum convolutional neural
     network (LPPC).
     """
-    # DEVICE:
-    device = qml.device('default.qubit.jax', wires=6)
-    # device = qml.device("default.qubit", wires=6)
-    # device = qml.device("default.mixed", wires=6)
+    ## DEVICE
+    # *1* Define number of wires for device (easier to switch between device types):
+    device_wires = 6
+    # *2* Select device for class:
+    device = qml.device('default.qubit.jax', wires=device_wires)
+    # device = qml.device("default.qubit", wires=device_wires)
+    # device = qml.device("default.mixed", wires=device_wires)
 
     def __init__(self):
-        # QUANTUM-MATH-OPS:
+        ## CLASSES:
         self.qmo = qmath_ops
-        # QUBITS:
+        ## QUBITS:
         self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
         self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
-        # ACTIVE QUBITS:
+        ## ACTIVE QUBITS:
         self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
-        # WIRES:
+        ## WIRES:
         self.wires = 6
         self.n_wires = 6
         self.num_wires = 6
@@ -159,9 +122,6 @@ class LayersQC:
         for indx, w in enumerate(wires):
             if indx % 2 == 1 and indx < n_wires:
                 m_outcome = qml.measure(w)
-                #qml.cond applies U3 only if m_outcome == 1 
-                # if m_outcome == 1:
-                #     qml.U3(*weights, wires=wires[indx - 1])
 
                 qml.cond(m_outcome, qml.U3)(*weights, wires=wires[indx - 1])
 
@@ -175,14 +135,14 @@ class LayersQC:
             -> active_qubits (list[int]): List of active qubits to apply the convolutional layer on.
             -> barrier (bool): Whether to add a barrier after the operations.
         """
-        conv_operators = self.qmo.generate_gell_mann(self.qmo, 4)  # 2 qubit gell mann matricies
+        conv_operators = self.qmo.generate_gell_mann(self.qmo, 4)  # Two-qubit gell mann matricies
         u_conv = self.qmo.get_conv_op(self.qmo, conv_operators, params)  
 
         start_index = 0 
         index = start_index
 
         while index + 3 < len(active_qubits):
-            q_index = active_qubits[index] # (Q: Use 'active_qubits' or 'self.active_qubits'?)
+            q_index = active_qubits[index]
             q_index_1 = active_qubits[index + 1]
             q_index_2 = active_qubits[index + 2]
             q_index_3 = active_qubits[index + 3]
@@ -215,7 +175,7 @@ class LayersQC:
             -> active_qubits (list[int]): List of active qubits to apply the convolutional layer on.
             -> barrier (bool): Whether to add a barrier after the operations.
         """
-        conv_operators = self.qmo.generate_gell_mann(self.qmo, 8)  # 3 qubit operators
+        conv_operators = self.qmo.generate_gell_mann(self.qmo, 8)  # Three-qubit operators
         u_conv = self.qmo.get_conv_op(self.qmo, conv_operators, params) # params = 63 (?)
 
         start_index = 0 
@@ -237,13 +197,13 @@ class LayersQC:
 
         start_index = 0 
         index = start_index
-        # (3 qubit convolutions)
+        # (Three-qubit convolutions)
         group_size = 2
 
         while index + (group_size - 1) < len(active_qubits):
             param_pointer = 0
             lst_indicies = range(index, index + group_size)
-                # z,y ascending loop
+                # Ascending loop -> z,y
             for axis in ['z', 'y']:
                 split_index = group_size - 1
                 while split_index > 0:
@@ -266,7 +226,7 @@ class LayersQC:
                     qml.RY(params[param_pointer], active_qubits[lst_indicies[split_index]])
                 param_pointer += 1
 
-            # descending loop
+            # Descending loop:
             for axis in ['y', 'z']:
                 split_index = 1
 
@@ -309,7 +269,6 @@ class LayersQC:
             self.four_conv_layer(kernel_weights[:15], n_wires, barrier=True)
             self.three_conv_layer(kernel_weights[15:78], n_wires, barrier=True)
 
-        # self.convolutional_layer(kernel_weights[:15], n_wires, skip_first_layer=skip_first_layer)
         self.pooling_layer(kernel_weights[78:], n_wires)
 
     # ******* DENSE LAYER *******:
@@ -328,6 +287,10 @@ class LayersQC:
         # Apply Fully Connected Operator to active qubits:
         qml.QubitUnitary(fc_op, wires=wires)
 
+    # ----------------------------------------------------
+    #          CIRCUIT FUNCTIONS (QC AND LAYERS)
+    # ----------------------------------------------------
+
     # ******* QUANTUM CIRCUIT *******:
     @qml.qnode(device, interface='jax')
     def conv_net(self, weights, last_layer_weights, features):
@@ -335,9 +298,9 @@ class LayersQC:
         Defines the QCNN circuit.
         
         Args:
-            weights (np.array): Parameters of the convolution and pool layers.
-            last_layer_weights (np.array): Parameters of the last dense layer.
-            features (np.array): Input data to be embedded using AmplitudeEmbedding.
+            weights (array): Parameters of the convolution and pool layers.
+            last_layer_weights (array): Parameters of the last dense layer.
+            features (array): Input data to be embedded using AmplitudeEmbedding.
         """
 
         layers = weights.shape[1]
@@ -359,6 +322,26 @@ class LayersQC:
         )
         self.dense_layer(last_layer_weights, wires)
         return qml.probs(wires=(0))
+    
+    # ******* THREE-QUBIT UNITARY CONVOLUTIONAL LAYER CIRCUIT *******:
+    @qml.qnode(device)
+    def three_layer_conv_circuit(self, params, active_qubits):
+        """
+        Defines a circuit for the three-qubit unitary convolutional layer (for priority use in 
+        drawings).
+        """
+        self.three_conv_layer(params, active_qubits)
+        return qml.probs(wires=(0))
+    
+    # ******* CONVOLUTIONAL AND POOLING LAYER CIRCUIT *******:
+    @qml.qnode(device)
+    def conv_and_pooling_circuit(self, kernel_weights, n_wires):
+        """
+        Defines a circuit for the convolutional and pooling layer used in QCNN (for priority use
+        in drawings).
+        """
+        self.conv_and_pooling(kernel_weights, n_wires)
+        return qml.probs(wires=(0))
 
 
 # ============================================================
@@ -371,19 +354,23 @@ class LayersLPPC:
     Contains all relevant circuit and layer functions for the quantum convolutional neural
     network (LPPC).
     """
-    # DEVICE:
-    device = qml.device("default.qubit", wires=6)
-    # device = qml.device("mixed.qubit", wires=6)
+    ## DEVICE
+    # *1* Define number of wires for device (easier to switch between device types):
+    device_wires = 6
+    # *2* Select device for class:
+    # device = qml.device('default.qubit.jax', wires=device_wires)
+    device = qml.device("default.qubit", wires=device_wires)
+    # device = qml.device("default.mixed", wires=device_wires)
 
     def __init__(self):
-        # QUANTUM-MATH-OPS:
+        ## CLASSES:
         self.qmo = qmath_ops
-        # QUBITS:
+        ## QUBITS:
         self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
         self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
-        # ACTIVE QUBITS:
+        ## ACTIVE QUBITS:
         self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
-        # WIRES:
+        ## WIRES:
         self.wires = 6
         self.n_wires = 6
         self.num_wires = 6
@@ -557,46 +544,6 @@ class LayersLPPC:
 
 
 # ============================================================
-#                 NEW CIRCUIT DRAWING CLASS
-# ============================================================
-
-
-
-class DrawQC(LayersQC):
-    """
-    Contains functions for drawing different layer functions relevant to the
-    quantum convolutional neural network, including convolutional layers, pooling layers,
-    fully connected layers, and quantum circuits. Defaults to a 2-Qubit representation of
-    each layer, as well as defaulting to the most recent version of each layer function if
-    none is specified.
-    """
-    def __init__(self):
-        # QUBITS:
-        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
-        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
-        # ACTIVE QUBITS:
-        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
-        # WIRES:
-        self.wires = 6
-        self.n_wires = 6
-        self.num_wires = 6
-        self.n_wires_draw = 2 # (For drawings)
-    
-    # ----------------------------------------------------
-    #          DRAWING FUNCTIONS (NEW/ESSENTIAL)
-    # ----------------------------------------------------
-
-    # ******* TO-DO *******:
-    def todo_qc_draw():
-        """
-        Placeholder function for future implementation.
-        """
-        # TO-DO: Implement this function
-
-        pass
-
-
-# ============================================================
 #            ORIGINAL CIRCUIT DRAWING CLASS (LPPC)
 # ============================================================
     
@@ -610,12 +557,13 @@ class DrawLPPC(LayersLPPC):
     none is specified (LPPC).
     """
     def __init__(self):
+        ## CLASSES:
         self.lppc_layers = LayersLPPC()
         # QUBITS:
-        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
-        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
+        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration
+        self.n_qubits_draw = 2 # 2 qubit config for drawings
         # ACTIVE QUBITS:
-        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
+        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits'
         # WIRES:
         self.wires = 6
         self.n_wires = 6
@@ -737,13 +685,14 @@ class DrawLPPC(LayersLPPC):
 # ============================================================
 
 
-class TrainQC(DrawQC):
+class TrainQC(LayersQC):
     """
     Contains functions for optimization steps in a Quantum Convolutional Neural Network (QCNN).
     It depends on the layer functions provided in the QCircuitLPPC class.
     """
     # qcnn_layers = LayersLPPC()
     def __init__(self):
+        ## CLASSES:
         self.qc_layers = LayersQC()  # Instantiate LayersQC (once)
         # self.qcnn_layers = LayersQC()
         # QUBITS:
@@ -806,8 +755,10 @@ class TrainQC(DrawQC):
         )
 
     # ******* NEW COMPUTE ACCURACY *******:
+    # @jax.jit(static_argnums=(0, 1, 2, 3))
+    # @jax.jit
+    # @jax.jit(static_argnames=['weights', 'weights_last', 'features', 'labels'])
     @staticmethod
-    # @jax.jit # (Both JAX and JIT)
     def compute_accuracy(weights, weights_last, features, labels):
         """
         Computes the accuracy over the provided features and labels.
@@ -818,7 +769,6 @@ class TrainQC(DrawQC):
 
     # ******* NEW COMPUTE COST *******:
     @staticmethod
-    # @jax.jit # (Both JAX and JIT)
     def compute_cost(weights, weights_last, features, labels):
         """
         Computes the cost over the provided features and labels.
@@ -842,51 +792,31 @@ class TrainQC(DrawQC):
         return jnp.array(weights), jnp.array(weights_last)
     
     # ******* NEW TRAIN QCNN *******:
-    # @jax.jit # (Both JAX and JIT)
     @staticmethod
-    def train_qcnn(num_train, num_test, num_epochs):
+    def train_qcnn(n_train, n_test, n_epochs):
         """
         Trains data for the QCNN model.
         """
-        #---------------------------------------------------
-        # Convert params to class 'jax':
-        # print(f"-> 'num_train': {type(num_train)}")
-        # print(f"-> 'num_test': {type(num_test)}")
-        # print(f"-> 'num_epochs': {type(num_epochs)}")
-        num_train = jnp.int64(num_train)
-        num_test = jnp.int64(num_test)
-        num_epochs = jnp.int64(num_epochs)
-        #---------------------------------------------------
-
-        n_test = 2      # -> 'num_train' (static value)
-        n_train = 2     # -> 'num_test' (static value)
-        n_epochs = 100  # -> 'num_epochs' (static value)
-
-        # Prepare data (NumPy)
+        # Prepare data (NumPy):
         features_np, labels_np = LoadDataQC.prepare_data()
         features = jnp.array(features_np) # NP -> JAX Arrays
         labels = jnp.array(labels_np) # NP -> JAX Arrays
 
-        # Define RNG:
-        # rng_jax = jax.random.PRNGKey(seed=seed)  # *1* (JAX)
-        # rng = rng_jax
-
         ## JAX.JIT CONFIGURATION:
-        # ----------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------------------
         use_wrapped_version_train = False  # TRUE -> jax.jit-wrapped version, FALSE -> direct call
 
         ## TRUE (JAX.JIT-WRAPPED):
         if use_wrapped_version_train is True:
             # Load data using wrapped function:
-            load_digits_jax_V3_wrapped = jax.jit(LoadDataQC.load_digits_jax_V3)
-            x_train, y_train, x_test, y_test = load_digits_jax_V3_wrapped(n_train, n_test, features, labels)
+            load_digits_data_jax_wrapped = jax.jit(LoadDataQC.load_digits_data_jax)
+            x_train, y_train, x_test, y_test = load_digits_data_jax_wrapped(
+                n_train, n_test, features, labels)
         # FALSE (DIRECT CALL):
         else:
-            x_train, y_train, x_test, y_test = LoadDataQC.load_digits_jax_V3(n_train=n_train, n_test=n_test,
-                                                                            features=features, labels=labels)
-            # x_train, y_train, x_test, y_test = LoadDataQC.load_digits_jax_V1(n_train, n_test) # JAX *1*
-            # x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data(n_train, n_test, rng)
-        # ----------------------------------------------------------------------------------------------------
+            x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data_jax(
+                n_train=n_train, n_test=n_test,features=features, labels=labels)
+        # -------------------------------------------------------------------------------------------------
 
         # Define lambda cost function
         compute_cost_lambda = lambda w, wl, f, l: TrainQC.compute_cost(w, wl, f, l)
@@ -918,18 +848,8 @@ class TrainQC(DrawQC):
             test_cost = 1.0 - jnp.sum(test_out) / len(test_out)
             test_cost_epochs.append(test_cost)
 
-        # Convert lists to JAX arrays (if needed):
-        '''
-        n_train_arr = jnp.full(n_epochs, n_train)
-        train_cost_epochs = jnp.asarray(train_cost_epochs)
-        train_acc_epochs = jnp.asarray(train_acc_epochs)
-        test_cost_epochs = jnp.asarray(test_cost_epochs)
-        test_acc_epochs = jnp.asarray(test_acc_epochs)
-        '''
-
         # Create JAX array for 'n_train':
         n_train_list = [n_train] * n_epochs # ORIGINAL ('n_train')
-        # n_train_arr = jnp.asarray(n_train_list) # JAX ('n_train')
             
         return dict(
             n_train=n_train_list,
@@ -943,27 +863,10 @@ class TrainQC(DrawQC):
     # @jax.jit # (JIT-compiled use)
     # ******* RUN QCNN TRAINING ITERATIONS *******:
     @staticmethod
-    def run_iterations(num_train, num_test, num_epochs):
+    def run_iterations(n_train, n_test, n_epochs):
         """
         Runs selected number of iterations of training loop for the QCNN model.
-
-        (Note: 'num_train', 'num_test', 'num_epochs' currently passed as dummy variables for
-        functionality purposes, 'n_train', 'n_test', 'n_epochs' defined within each function with
-        type jnp.int64. Change 'num' in variable name to 'n' to pass through function(s).)
         """
-        #---------------------------------------------------
-        # Convert params to class 'jax':
-        # print(f"-> 'num_train': {type(num_train)}")
-        # print(f"-> 'num_test': {type(num_test)}")
-        # print(f"-> 'num_epochs': {type(num_epochs)}")
-        num_train = jnp.int64(num_train)
-        num_test = jnp.int64(num_test)
-        num_epochs = jnp.int64(num_epochs)
-        #---------------------------------------------------
-
-        n_test = 2      # -> 'num_train' (static value)
-        n_train = 2     # -> 'num_test' (static value)
-        n_epochs = 100  # -> 'num_epochs' (static value)
         n_reps = 10
 
         # original (below): columns=["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
@@ -972,7 +875,7 @@ class TrainQC(DrawQC):
         )
 
         for _ in range(n_reps):
-            results = TrainQC.train_qcnn(num_train=n_train, num_test=n_test, num_epochs=n_epochs)
+            results = TrainQC.train_qcnn(n_train, n_test, n_epochs)
             results_df = pd.concat(
                 [results_df, pd.DataFrame.from_dict(results)], axis=0, ignore_index=True
             )
@@ -982,43 +885,23 @@ class TrainQC(DrawQC):
     # @jax.jit # (JIT-compiled use)
     # ******* COMPUTE AGGREGATED TRAINING RESULTS *******:
     @staticmethod
-    def compute_aggregated_results(num_train, num_test, num_epochs):
+    def compute_aggregated_results(n_train, n_test, n_epochs):
         """
         Function to run training iterations for multiple sizes and aggregate the results.
-        
-        (Note: 'num_train', 'num_test', 'num_epochs' currently passed as dummy variables for
-        functionality purposes, 'n_train', 'n_test', 'n_epochs' defined within each function with
-        type jnp.int64. Change 'num' in variable name to 'n' to pass through function(s).)
         """
-
-        #---------------------------------------------------
-        # Convert params to class 'jax':
-        # print(f"-> 'num_train': {type(num_train)}")
-        # print(f"-> 'num_test': {type(num_test)}")
-        # print(f"-> 'num_epochs': {type(num_epochs)}")
-        num_train = jnp.int64(num_train)
-        num_test = jnp.int64(num_test)
-        num_epochs = jnp.int64(num_epochs)
-        #---------------------------------------------------
-
-        n_test = 2      # -> 'num_train' (static value)
-        n_train = 2     # -> 'num_test' (static value)
-        n_epochs = 100  # -> 'num_epochs' (static value)
-        # n_reps = 10
-
-        # run training for multiple sizes
+        # Run training for multiple sizes:
         # train_sizes = [2, 5, 10, 20, 40, 80]
+        # Single-sized training:
         train_sizes = [2]
-        results_df = TrainQC.run_iterations(num_train=n_train, num_test=n_test, num_epochs=n_epochs)
+        results_df = TrainQC.run_iterations(n_train, n_test, n_epochs)
         for n_train in train_sizes[1:]:
-            results_df = pd.concat([results_df, TrainQC.run_iterations(num_train=n_train, num_test=n_test,
-                                                                       num_epochs=n_epochs)])
+            results_df = pd.concat([results_df, TrainQC.run_iterations(n_train, n_test, n_epochs)])
         
         return results_df
     
     # ******* PLOT AGGREGATED TRAINING RESULTS *******:
     @staticmethod
-    def plot_aggregated_results(results_df, num_train, steps=100, 
+    def plot_aggregated_results(results_df, n_train, steps=100, 
                             title_loss='Train and Test Losses', 
                             title_accuracy='Train and Test Accuracies',
                             markevery=10):
@@ -1026,26 +909,14 @@ class TrainQC(DrawQC):
         Function to aggregate and plot results from a DataFrame.
         
         Args:
-        -> results_df: DataFrame containing the results to aggregate and plot
-        -> steps: Specific steps or epochs to consider for the final loss difference calculation
-        -> title_loss: Title for the loss plot (Optional)
-        -> title_accuracy: Title for the accuracy plot (Optional)
-        -> markevery: Interval at which markers are displayed (Optional)
+        esults_df (DataFrame): Contains the results to aggregate and plot
+        steps (int): Specific steps or epochs to consider for the final loss difference calculation
+        title_loss (string): Title for the loss plot (Optional)
+        title_accuracy (string): Title for the accuracy plot (Optional)
+        markevery (int): Interval at which markers are displayed (Optional)
         """
-        #---------------------------------------------------
-        # Convert params to class 'jax':
-        # print(f"-> 'num_train': {type(num_train)}")
-        num_train = jnp.int64(num_train)
-        #---------------------------------------------------
-
-        # n_test = 2
-        n_train = 2
-        # n_train = jnp.int64(2)
-        # n_epochs = 100
-        # n_reps = 10
-
-        train_sizes = [2, 5, 10]
-        # train_sizes = [2]
+        #train_sizes = [2, 5, 10]
+        train_sizes = [2]
 
         # aggregate dataframe
         df_agg = results_df.groupby(["n_train", "step"]).agg(["mean", "std"])

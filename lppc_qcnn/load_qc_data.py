@@ -3,7 +3,6 @@
 #### ***** IMPORTS / DEPENDENCIES *****:
 
 ### *** PLOTTING ***:
-# import matplotlib; # (NOT ACCESSED)
 import matplotlib.pyplot as plt
 
 ### *** PENNYLANE ***:
@@ -21,10 +20,8 @@ import jax;
 jax.config.update('jax_platform_name', 'cpu')
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-# import jax.experimental.sparse as jsp # (NOT ACCESSED)
-# import jax.scipy.linalg as jsl # (NOT ACCESSED)
 ## OTHER (JAX):
-from jax import lax # (dynamic splicing)
+from jax import lax # Dynamic splicing
 
 # ---------------------------------------------------------------
 ### *** TORCHVISION (FOR DATA):
@@ -107,7 +104,8 @@ class DataQCNN:
             print(f"• LABELS dtype:  {labels.dtype}  | class type:  {type(labels[0])}")
             print(f"___SIZE___:")
             print(f"• FEATURES size:  {features.size}")
-            print(f"• LABELS size:  {labels.size}")
+            print(f"• LABELS size:  {labels.size}\n")
+            print() # For spacing
         elif package == 'jax':
             # Print relevant attributes:
             print(f"------------JAX------------")
@@ -119,7 +117,7 @@ class DataQCNN:
             print(f"• LABELS dtype:  {labels_jax.dtype}  | class type:  {type(labels_jax[0])}")
             print(f"___SIZE___:")
             print(f"• FEATURES size:  {features_jax.size}")
-            print(f"• LABELS size:  {labels_jax.size}")
+            print(f"• LABELS size:  {labels_jax.size}\n")
         else:
             raise ValueError("package must be either 'jax' or 'numpy'")
         
@@ -135,34 +133,33 @@ class DataQCNN:
         Returns training and testing data of the digits dataset using jax operations.
 
         Args:
-        -> n_train (int): The number of training samples to select from the dataset.
-        -> n_test (int): The number of testing samples to select from the dataset.
-        -> rng_jax (jax.random.Generator): A random number generator instance for reproducibility.
+        'n_train' (int): The number of training samples to select from the dataset.
+        'n_test' (int): The number of testing samples to select from the dataset.
+        'rng_jax' (jax.random.Generator): A random number generator instance for reproducibility.
         """
         digits = datasets.load_digits()
         features, labels = digits.data, digits.target
 
-        # convert features and labels to JAX arrays
+        # Features and Labels -> JAX arrays
         features = jnp.asarray(features)
         labels = jnp.asarray(labels)
 
-        # only use first two classes
+        # Only use first two classes (0 and 1):
         mask = (labels == 0) | (labels == 1)
         features = features[mask]
         labels = labels[mask]
 
-        # normalize data
+        # Normalize data
         features = features / jnp.linalg.norm(features, axis=1, keepdims=True)
 
-        # Generate shuffled indices (NEW)
+        # Generate shuffled indices:
         rng_jax, subkey = jax.random.split(rng_jax)
         shuffled_indices = jax.random.permutation(subkey, len(labels))
 
         n_train = jnp.int64(n_train)
         n_test = jnp.int64(n_test)
 
-        # subsample train and test split (NEW)
-        # train_indices = shuffled_indices[:n_train] # *1* with JAX
+        # Subsample train and test split (NEW)
         train_indices = lax.dynamic_slice(shuffled_indices, (0,), (n_train,)) # *2* with JAX
         # test_indices = shuffled_indices[num_train:num_train + num_test] # *1* with JAX
         test_indices = lax.dynamic_slice(shuffled_indices, (n_train,), (n_test,)) # *2* with JAX
@@ -193,6 +190,11 @@ class LoadDataQC:
     # ******* PREPARING QC DATASET *******:
     @staticmethod
     def prepare_data():
+        """
+        Prepares MNIST data for QCNN before converting to JAX and using JAX operations. Loads the 
+        data, uses boolean indexing to only train on binary classification values (0 and 1) and also
+        normalizes the data.
+        """
         digits = datasets.load_digits()
         features, labels = digits.data, digits.target
 
@@ -201,14 +203,13 @@ class LoadDataQC:
         features = features[mask]
         labels = labels[mask]
 
-        # normalize data
+        # Normalize data
         features = features / np.linalg.norm(features, axis=1).reshape((-1, 1))
 
         return features, labels
 
-    # ******* NEW LOADING DIGITS DATA *******:
+    # ******* LOADING DIGITS DATA *******:
     @staticmethod
-    # @partial(jax.jit, static_argnums=(0, 1))
     def load_digits_data(n_train, n_test, rng):
         """
         Returns training and testing data of the digits dataset.
@@ -244,7 +245,7 @@ class LoadDataQC:
             jnp.asarray(y_test),
         )
     
-    # ******* JAX LOADING DIGITS DATA (V1) *******:
+    # ******* JAX LOADING DATA (V1) *******:
     @staticmethod
     @partial(jax.jit, static_argnums=(0, 1)) # -> 'num_train' and 'num_test'
     def load_digits_jax_V1(n_train, n_test):
@@ -302,9 +303,8 @@ class LoadDataQC:
             jnp.asarray(y_test),
         )
     
-    # ******* JAX LOADING DIGITS DATA (V2) *******:
+    # ******* JAX LOADING DATA (V2) *******:
     @staticmethod
-    # @partial(jax.jit, static_argnums=(0, 1)) # -> 'num_train' and 'num_test'
     def load_digits_jax_V2(n_train, n_test, features, labels):
         """
         Returns training and testing data of the digits dataset using JAX. Version 1 using jax, which
@@ -345,9 +345,8 @@ class LoadDataQC:
             jnp.asarray(y_test),
         )
     
-    # ******* JAX LOADING DIGITS DATA (V3) *******:
+    # ******* JAX LOADING DATA (V3) *******:
     @staticmethod
-    # @partial(jax.jit, static_argnums=(0, 1)) # -> 'num_train' and 'num_test'
     def load_digits_jax_V3(n_train, n_test, features, labels):
         """
         Returns training and testing data of the digits dataset using JAX. Version 1 using jax, which
@@ -355,21 +354,21 @@ class LoadDataQC:
         instantiated, and are passed to the function as arguments. Unlike V2, this version omits the
         use of jnp.setdiff1d and directly shuffles indices instead.
         """
-
-        # ### *** INDICES ***:
+        # *** INDICES ***:
         seed = 0
         jax_rng = jax.random.PRNGKey(seed=seed) # JAX rng key
 
         # n_total = labels.shape[0] # total number of labels
         n_total = 64 # (2^n_qubits, 6-qubit system) -> EQUAL TO LENGTH OF 'LABELS'
 
-        # shuffle indices
+        # Shuffle indices:
         shuffled_indices = jax.random.permutation(jax_rng, n_total)
 
-        # split indices for training and testing
+        # Split indices for training and testing:
         train_indices = shuffled_indices[:n_train]
         test_indices = shuffled_indices[n_train:n_train + n_test]
 
+        # Split data using indices:
         x_train, y_train = features[train_indices], labels[train_indices]
         x_test, y_test = features[test_indices], labels[test_indices]
 
@@ -379,7 +378,11 @@ class LoadDataQC:
             jnp.asarray(x_test),
             jnp.asarray(y_test),
         )
-
+    
+    # ******* LOADING DIGITS DATA WITH JAX *******:
+    @staticmethod
+    def load_digits_data_jax(n_train, n_test, features, labels):
+        return LoadDataQC.load_digits_jax_V3(n_train, n_test, features, labels)
     
     # ******* VISUALIZING (DIGITS) DATA *******:
     @staticmethod
@@ -404,7 +407,7 @@ class LoadDataQC:
         plt.subplots_adjust(wspace=0, hspace=0)
         plt.show()
 
-    # ******* SAMPLE QUANTUM CIRCUIT DATA *******:
+    # ******* SAMPLE QC DATA (INOPERATIVE) *******:
     @staticmethod
     def sample_qcdata():
         """
