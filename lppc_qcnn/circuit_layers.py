@@ -727,14 +727,6 @@ class TrainQC(LayersQC):
     # ----------------------------------------------------
     #             NEW OPTIMIZATION FUNCTIONS
     # ----------------------------------------------------
-        
-    # (Note: JIT-compiled within class will be wrapped with "@jax.jit", and will have "@jax.jit" if the
-    # function uses 'jax' or 'jnp', calls a function that is JIT-compiled, or both. Comments with labels 
-    # of 'JIT-compiled use', 'jax numpy use', or 'both jax uses' will be included next to each wrapping
-    # for clarity purposes.)
-        # (JIT-compiled use)
-        # (JAX NumPy use)
-        # (Both JAX and JIT)
 
     # ******* COMPUTE (LABEL) OUTPUT *******:
     @staticmethod
@@ -803,7 +795,7 @@ class TrainQC(LayersQC):
         labels = jnp.array(labels_np) # NP -> JAX Arrays
 
         ## JAX.JIT CONFIGURATION:
-        # -------------------------------------------------------------------------------------------------
+        # ------------------------------------------------------------------------------------------
         use_wrapped_version_train = False  # TRUE -> jax.jit-wrapped version, FALSE -> direct call
 
         ## TRUE (JAX.JIT-WRAPPED):
@@ -816,7 +808,7 @@ class TrainQC(LayersQC):
         else:
             x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data_jax(
                 n_train=n_train, n_test=n_test,features=features, labels=labels)
-        # -------------------------------------------------------------------------------------------------
+        # ------------------------------------------------------------------------------------------
 
         # Define lambda cost function
         compute_cost_lambda = lambda w, wl, f, l: TrainQC.compute_cost(w, wl, f, l)
@@ -863,11 +855,10 @@ class TrainQC(LayersQC):
     # @jax.jit # (JIT-compiled use)
     # ******* RUN QCNN TRAINING ITERATIONS *******:
     @staticmethod
-    def run_iterations(n_train, n_test, n_epochs):
+    def run_iterations(n_train, n_test, n_epochs, n_reps):
         """
         Runs selected number of iterations of training loop for the QCNN model.
         """
-        n_reps = 10
 
         # original (below): columns=["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
         results_df = pd.DataFrame(
@@ -885,7 +876,7 @@ class TrainQC(LayersQC):
     # @jax.jit # (JIT-compiled use)
     # ******* COMPUTE AGGREGATED TRAINING RESULTS *******:
     @staticmethod
-    def compute_aggregated_results(n_train, n_test, n_epochs):
+    def compute_aggregated_results(n_train, n_test, n_epochs, n_reps):
         """
         Function to run training iterations for multiple sizes and aggregate the results.
         """
@@ -893,9 +884,10 @@ class TrainQC(LayersQC):
         # train_sizes = [2, 5, 10, 20, 40, 80]
         # Single-sized training:
         train_sizes = [2]
-        results_df = TrainQC.run_iterations(n_train, n_test, n_epochs)
+        results_df = TrainQC.run_iterations(n_train, n_test, n_epochs, n_reps)
         for n_train in train_sizes[1:]:
-            results_df = pd.concat([results_df, TrainQC.run_iterations(n_train, n_test, n_epochs)])
+            results_df = pd.concat([results_df, TrainQC.run_iterations(n_train, n_test,
+                                                                       n_epochs, n_reps)])
         
         return results_df
     
