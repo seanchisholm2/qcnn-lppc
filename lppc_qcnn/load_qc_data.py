@@ -382,6 +382,7 @@ class LoadDataQC:
     # ******* LOADING DIGITS DATA WITH JAX *******:
     @staticmethod
     def load_digits_data_jax(n_train, n_test, features, labels):
+        # Current Version: *3*
         return LoadDataQC.load_digits_jax_V3(n_train, n_test, features, labels)
     
     # ******* VISUALIZING (DIGITS) DATA *******:
