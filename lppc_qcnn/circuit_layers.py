@@ -861,9 +861,10 @@ class TrainQC(LayersQC):
         Runs selected number of iterations of training loop for the QCNN model.
         """
 
-        # original (below): columns=["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
+        # Original (below): ["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
+        # Current: ["n_train", "step", "train_cost", "train_acc", "test_cost", "test_acc"]
         results_df = pd.DataFrame(
-            columns=["n_train", "step", "train_cost", "train_acc", "test_cost", "test_acc"]
+            columns=["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
         )
 
         for _ in range(n_reps):
