@@ -442,6 +442,12 @@ class LoadDataQC:
             plt.savefig(save_path, dpi = 400,bbox_inches = "tight")
         plt.show()
 
+    # ******* VISUALIZING DIGITS DATA (CURRENT) *******:
+    @staticmethod
+    def draw_mnist_data():
+        # return LoadDataQC.draw_mnist_data_V2() # VERSION 1 (SAVES IMAGES)
+        return LoadDataQC.draw_mnist_data_V1() # VERSION 1 (DISPLAYS IMAGES ONLY)
+
     # ******* SAMPLE QC DATA (INOPERATIVE) *******:
     @staticmethod
     def sample_qcdata():
