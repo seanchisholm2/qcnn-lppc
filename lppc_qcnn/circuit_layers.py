@@ -26,6 +26,9 @@ import jax.numpy as jnp
 ## OTHER (JAX):
 import optax
 
+### *** OTHER ***:
+from datetime import datetime # labeling images
+
 ### *** RNG ***:
 seed = 0
 
@@ -898,7 +901,8 @@ class TrainQC(LayersQC):
     def plot_aggregated_results(results_df, n_train, steps=100, 
                             title_loss='Train and Test Losses', 
                             title_accuracy='Train and Test Accuracies',
-                            markevery=10):
+                            markevery=10,
+                            save_fig=False):
         """
         Function to aggregate and plot results from a DataFrame.
         
@@ -971,8 +975,12 @@ class TrainQC(LayersQC):
 
         axes[0].legend(handles=legend_elements, ncol=3)
         axes[1].legend(handles=legend_elements, ncol=3)
-
         #axes[1].set_yscale('log', base=2)
+
+        if save_fig is True:
+            current_date = datetime.now().strftime('%m-%d-%Y') # current date in format MM-DD-YYYY
+            save_path_results = f'qcnn_figs/qc-result_figs/qcnn_ntrain{n_train}_results_{current_date}.png' # save path
+            plt.savefig(save_path_results, dpi=400, bbox_inches="tight") # high-res image
         plt.show()
 
 

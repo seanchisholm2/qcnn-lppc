@@ -433,13 +433,13 @@ class LoadDataQC:
 
         plt.tight_layout()
         plt.subplots_adjust(wspace=0, hspace=0)
-        # save_path0 = '/Users/seanchisholm/Physics Research Summer 2024/LPPC_QCNN-Project/
-        # Quantum-CNN/qcnn_figs/sample_figure.png'
 
         # Save figure (Jupyter):
+        # save_path0 = '/Users/seanchisholm/Physics Research Summer 2024/LPPC_QCNN-Project/
+        # Quantum-CNN/qcnn_figs/sample_figure.png'
         if jupyter is True:
             save_path = f'qcnn_figs/{image_name}.png'
-            plt.savefig(save_path, dpi = 400,bbox_inches = "tight")
+            plt.savefig(save_path, dpi = 400, bbox_inches = "tight")
         plt.show()
 
     # ******* VISUALIZING DIGITS DATA (CURRENT) *******:
