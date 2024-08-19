@@ -384,10 +384,10 @@ class LoadDataQC:
     def load_digits_data_jax(n_train, n_test, features, labels):
         # Current Version: *3*
         return LoadDataQC.load_digits_jax_V3(n_train, n_test, features, labels)
-    
-    # ******* VISUALIZING (DIGITS) DATA *******:
+
+    # ******* VISUALIZING DIGITS DATA (V1) *******:
     @staticmethod
-    def draw_mnist_data():
+    def draw_mnist_data_V1():
         """
         Loads the MNIST digits dataset, filters the images and labels for digits 0 and 1,
         and displays the first 12 images in a 1x12 grid.
@@ -406,6 +406,40 @@ class LoadDataQC:
 
         plt.tight_layout()
         plt.subplots_adjust(wspace=0, hspace=0)
+        plt.show()
+    
+    # ******* VISUALIZING DIGITS DATA (V2) *******:
+    @staticmethod
+    def draw_mnist_data_V2(jupyter=False, image_name=None):
+        """
+        Loads the MNIST digits dataset, filters the images and labels for digits 0 and 1,
+        and displays the first 12 images in a 1x12 grid.
+        """
+        # Default image name:
+        if image_name is None:
+            image_name = "mnist_data"
+
+        digits = datasets.load_digits()
+        images, labels = digits.data, digits.target
+
+        images = images[np.where((labels == 0) | (labels == 1))]
+        labels = labels[np.where((labels == 0) | (labels == 1))]
+
+        fig, axes = plt.subplots(nrows=1, ncols=12, figsize=(3, 1))
+
+        for i, ax in enumerate(axes.flatten()):
+            ax.imshow(images[i].reshape((8, 8)), cmap="gray")
+            ax.axis("off")
+
+        plt.tight_layout()
+        plt.subplots_adjust(wspace=0, hspace=0)
+        # save_path0 = '/Users/seanchisholm/Physics Research Summer 2024/LPPC_QCNN-Project/
+        # Quantum-CNN/qcnn_figs/sample_figure.png'
+
+        # Save figure (Jupyter):
+        if jupyter is True:
+            save_path = f'qcnn_figs/{image_name}.png'
+            plt.savefig(save_path, dpi = 400,bbox_inches = "tight")
         plt.show()
 
     # ******* SAMPLE QC DATA (INOPERATIVE) *******:
