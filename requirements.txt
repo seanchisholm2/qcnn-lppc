@@ -1,0 +1,9 @@
+matplotlib==3.9.1
+seaborn==0.13.2
+pennylane==0.37.0
+numpy==1.26.4
+jax==0.4.30
+optax==0.2.3
+pandas==2.2.2
+scikit-learn==1.5.1
+torch==2.2.2
