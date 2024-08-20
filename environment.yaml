@@ -1,0 +1,15 @@
+
+name: qcnn_env_lppc
+channels:
+  - defaults
+dependencies:
+  - python=3.11.9
+  - matplotlib
+  - seaborn
+  - pennylane
+  - numpy
+  - jax
+  - optax
+  - pandas
+  - scikit-learn
+  - torch
