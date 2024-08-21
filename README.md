@@ -1,4 +1,4 @@
-# lppc-qcnn
+# "lppc-qcnn"
 
 **A repository implementing a quantum convolutional neural network using the PennyLane QML package framework.**
 
