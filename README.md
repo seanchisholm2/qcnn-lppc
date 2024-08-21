@@ -10,10 +10,10 @@ This repository includes a detailed instructional Jupyter notebook in order to g
 
 ## Features
 
-- **Quantum Convolutional Neural Network (QCNN):** Implements a QCNN architecture using PennyLane, with a focus on data from the IceCube Neutrino Observatory.
+- **Quantum Convolutional Neural Network (QCNN):** Implements a QCNN model using PennyLane, with a focus on ultimately using data from the IceCube Neutrino Observatory, but in this case using the MNIST dataset.
 - **Instructional Notebook:** Comprehensive Jupyter notebook (`QCNN_Instructional_NB.ipynb`) is provided to demonstrate how to set up, train, and evaluate the QCNN.
-- **MNIST Dataset:** The instructional notebook uses the MNIST dataset to demonstrate how the QCNN can be trained using image data commonly used for training other machine learning models, and to show that this QCNN can be adapted for other datasets.
-- **Environment Setup:** Environment files (`environment.yaml` and `requirements.txt`) are included to make sure that all dependencies are correctly installed.
+- **MNIST Dataset:** The instructional notebook uses the MNIST dataset to demonstrate how the QCNN can be trained using image data commonly used for training other machine learning models, and to show that this QCNN can be adapted for other datasets. The MNIST dataset is a large set of roughly 70,000 grayscaled images of numerical digits that are each 28x28 pixels, although for use in the instructional notebook, only a subsample of the entire MNIST dataset is imported and processed.
+- **Environment Setup:** Environment-related files (`environment.yaml` and `requirements.txt`) are included to make sure that all packages dependencies are correctly installed and updated.
 
 ## Installation
 
