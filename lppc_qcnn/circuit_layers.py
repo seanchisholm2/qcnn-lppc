@@ -915,8 +915,9 @@ class TrainQC(LayersQC):
         title_accuracy (string): Title for the accuracy plot (Optional)
         markevery (int): Interval at which markers are displayed (Optional)
         """
-        train_sizes = [2, 5, 10]
-        # train_sizes = [2]
+        # train_sizes_1 = [2]
+        # train_sizes_2 = [2, 5]
+        # train_sizes_3 = [2, 5, 10]
 
         # aggregate dataframe
         df_agg = results_df.groupby(["n_train", "step"]).agg(["mean", "std"])
@@ -927,7 +928,8 @@ class TrainQC(LayersQC):
         fig, axes = plt.subplots(ncols=2, figsize=(16.5, 5))
 
         generalization_errors = []
-        train_sizes = [2]
+        # train_sizes = [2] # original
+        train_sizes = [n_train] # new
         # plot losses and accuracies
         for i, n_train in enumerate(train_sizes):
             df = df_agg[df_agg.n_train == n_train]
@@ -981,7 +983,7 @@ class TrainQC(LayersQC):
 
         if save_fig is True:
             current_date = datetime.now().strftime('%m-%d-%Y') # current date in format MM-DD-YYYY
-            save_path_results = f'qcnn_figs/qc-result_figs/qcnn_ntrain{n_train}_results_{current_date}.png' # save path
+            save_path_results = f'qcnn-figures/qcnn_ntrain{n_train}_results_{current_date}.png' # save path
             plt.savefig(save_path_results, dpi=400, bbox_inches="tight") # high-res image
         plt.show()
 
