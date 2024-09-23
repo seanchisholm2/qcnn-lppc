@@ -355,11 +355,12 @@ class LoadDataQC:
         use of jnp.setdiff1d and directly shuffles indices instead.
         """
         # *** INDICES ***:
-        seed = 0
-        jax_rng = jax.random.PRNGKey(seed=seed) # JAX rng key
 
         # n_total = labels.shape[0] # total number of labels
         n_total = 64 # (2^n_qubits, 6-qubit system) -> EQUAL TO LENGTH OF 'LABELS'
+
+        seed = np.random.randint(0, (2**32)-1)
+        jax_rng = jax.random.PRNGKey(seed=seed) # JAX rng key
 
         # Shuffle indices:
         shuffled_indices = jax.random.permutation(jax_rng, n_total)

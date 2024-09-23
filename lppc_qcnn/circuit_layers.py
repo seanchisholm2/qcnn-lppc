@@ -782,8 +782,10 @@ class TrainQC(LayersQC):
         """
         Initializes random weights for the QCNN model.
         """
-        weights = pnp.random.normal(loc=0, scale=1, size=(81, 2), requires_grad=True) # (Possible NP -> JNP)
-        weights_last = pnp.random.normal(loc=0, scale=1, size=4 ** 2 - 1, requires_grad=True) # (Possible NP -> JNP)
+        weights = pnp.random.normal(loc=0, scale=1, size=(81, 1), requires_grad=True)
+        weights_last = pnp.random.normal(loc=0, scale=1, size=4 ** 3 - 1, requires_grad=True) 
+        # weights = pnp.random.normal(loc=0, scale=1, size=(81, 2), requires_grad=True) # (Possible NP -> JNP)
+        # weights_last = pnp.random.normal(loc=0, scale=1, size=4 ** 2 - 1, requires_grad=True) # (Possible NP -> JNP)
 
         return jnp.array(weights), jnp.array(weights_last)
     
@@ -867,7 +869,7 @@ class TrainQC(LayersQC):
         # Original (below): ["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
         # Current: ["n_train", "step", "train_cost", "train_acc", "test_cost", "test_acc"]
         results_df = pd.DataFrame(
-            columns=["train_acc", "train_cost", "test_acc", "test_cost", "step", "n_train"]
+            columns=["n_train", "step", "train_cost", "train_acc", "test_cost", "test_acc"]
         )
 
         for _ in range(n_reps):
@@ -913,8 +915,8 @@ class TrainQC(LayersQC):
         title_accuracy (string): Title for the accuracy plot (Optional)
         markevery (int): Interval at which markers are displayed (Optional)
         """
-        #train_sizes = [2, 5, 10]
-        train_sizes = [2]
+        train_sizes = [2, 5, 10]
+        # train_sizes = [2]
 
         # aggregate dataframe
         df_agg = results_df.groupby(["n_train", "step"]).agg(["mean", "std"])
@@ -925,7 +927,7 @@ class TrainQC(LayersQC):
         fig, axes = plt.subplots(ncols=2, figsize=(16.5, 5))
 
         generalization_errors = []
-        train_sizes = [2, 5, 10]
+        train_sizes = [2]
         # plot losses and accuracies
         for i, n_train in enumerate(train_sizes):
             df = df_agg[df_agg.n_train == n_train]
