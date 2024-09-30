@@ -43,8 +43,15 @@ seed = 0
 rng_jax = jax.random.PRNGKey(seed=seed) # *1* (JAX)
 rng_jax_arr = jnp.array(rng_jax) # *2* (JAX)
 
+### *** PHOTON EVENTS ***: 
+import struct
+from enum import Enum
+from typing import List
+from tqdm.notebook import tqdm
+
 ### *** OTHER ***:
-# from glob import glob
+import awkward as ak
+from glob import glob
 
 ### ***** PACKAGE(S) *****:
 # ************************************************************************************
@@ -62,8 +69,87 @@ rng_jax_arr = jnp.array(rng_jax) # *2* (JAX)
 
 
 # ============================================================
+#                    NEW PHOTON EVENTS CLASS
+# ============================================================
+
+class PhotonQCNN:
+    """
+    A class for processing photon event data related to QCNN.
+    """
+
+    class ParticleType(Enum):
+        """
+        A subclass to represent different particle types.
+        """
+        PHOTON = 1
+        ELECTRON = 2
+        MUON = 3
+        TAU = 4
+
+    # ******* NUMBER OF HITS *******:
+    @staticmethod
+    def nhit(event_data):
+        """
+        Calculates the number of hits (nhit) from the event data.
+        """
+        return len(event_data['hits'])
+
+    # ******* NUMBER OF CHANNELS *******:
+    @staticmethod
+    def nchan(event_data):
+        """
+        Calculates the number of channels (nchan) from the event data.
+        """
+        return len(set(event_data['channels']))
+    
+    # ******* EVENTS PROCESSING FUNCTION *******:
+    @staticmethod
+    def process_photon_events(fs=None):
+        """
+        Processes photon events from the provided file paths or the 'photons' directory if no paths are provided,
+        classifies them as either muons or electrons, and generates a 3D scatter plot of photon positions
+        for a sample electron event.
+        """
+        if fs is None:
+            fs = glob("lppc_qcnn/photons/*.parquet")
+        
+        print(len(fs), "files")
+
+        muons = []
+        electrons = []
+        x_electrons = []
+        y_electrons = []
+        z_electrons = []
+
+        for idx, f in enumerate(fs):
+            events = ak.from_parquet(f)
+
+            # Determines if the event is a muon or electron
+            for i in range(len(events)): 
+                if events["mc_truth", "initial_state_type", i] == 14:
+                    pt = PhotonQCNN.ParticleType.MUON
+                    muons.append(events[i])
+                else:
+                    pt = PhotonQCNN.ParticleType.ELECTRON
+                    electrons.append(events[i])
+                    # Position of photons
+                    x_electrons.append(events[i].photons.sensor_pos_x)
+                    y_electrons.append(events[i].photons.sensor_pos_y)
+                    z_electrons.append(events[i].photons.sensor_pos_z)
+
+        # print(len(muons),len(electrons))
+
+        # Plotting 3D scatter for an example electron event
+        fig = plt.figure(figsize=(10, 7))
+        ax = fig.add_subplot(projection='3d')
+        ax.scatter(x_electrons[6], y_electrons[6], z_electrons[6], cmap='viridis')
+        plt.show()
+
+
+# ============================================================
 #                  NEW DATA PREPARATION CLASS
 # ============================================================
+
   
 class DataQCNN:
     """
