@@ -22,6 +22,7 @@ jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 ## OTHER (JAX):
 from jax import lax # Dynamic splicing
+import scipy as sp # Photon events
 
 # ---------------------------------------------------------------
 ### *** TORCHVISION (FOR DATA):
@@ -76,6 +77,10 @@ class PhotonQCNN:
     """
     A class for processing photon event data related to QCNN.
     """
+
+    # ----------------------------------------------------
+    #             READOUT HELPER FUNCTIONS (NEW)
+    # ----------------------------------------------------
 
     class ParticleType(Enum):
         """
@@ -145,6 +150,91 @@ class PhotonQCNN:
         ax.scatter(x_electrons[6], y_electrons[6], z_electrons[6], cmap='viridis')
         plt.show()
 
+    # ----------------------------------------------------
+    #             MATRIX GENERATOR FUNCTIONS (NEW)
+    # ----------------------------------------------------
+        
+    def deep_core_removal(event):
+        """
+        Deep core removal function.
+        """
+        mask = np.where(event["photons", "string_id"] < 79)
+        return event["photons","string_id"][mask], event["photons","sensor_id"][mask]
+    
+    def square_mapping(strings):
+        """
+        Square mapping function.
+        """
+        square_string = np.zeros(100)
+        values, counts = np.unique(strings, return_counts=True)
+
+        #-1 is to change from 1 indexing to 0 indexing, i.e.
+        #the first index is going to be 0, not 1
+        #+4 is to account for first 4 extra strings to make it a square 
+        #so on so forth 
+        #check the figure out from here: 
+        for idx,val in enumerate(values):
+
+            if val <= 6: 
+                square_string[val + 4 - 1] = counts[idx]
+
+            elif val <= 13: 
+                square_string[val + (4+3) - 1] = counts[idx]
+                
+            elif val <=21: 
+                square_string[val + (4+3+2) - 1] = counts[idx]
+                
+            elif val <=59:
+                square_string[val + (4+3+2+1) - 1] = counts[idx]
+                
+            elif val <=67:
+                square_string[val + (4+3+2+1+1) - 1] = counts[idx]
+                
+            elif val <=74:
+                square_string[val + (4+3+2+1+1+2) - 1] = counts[idx]
+                
+            elif val <=78: 
+                square_string[val + (4+3+2+1+1+2+3) - 1] = counts[idx]
+                
+        
+        return square_string.reshape((10, 10))
+
+    def make_tracks_cascades():
+        # Insert path to your files here
+        fs = glob("/Users/pavelzhelnin/Downloads/photons/*.parquet")
+        print(len(fs), "files")
+        xy_projection = True
+
+        # Create directories if not exist
+        for directory in ["flattened_tracks", "flattened_cascades"]:
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+        # Process files
+        for f in fs:
+            events = ak.from_parquet(f)
+            event_file = f.split("/")[-1].split(".")[0]
+
+            for idx, event in enumerate(events):
+                IC = np.zeros((60, 10, 10))
+
+                strings, sensors = PhotonQCNN.deep_core_removal(event)
+
+                if xy_projection:
+                    IC = PhotonQCNN.square_mapping(strings)
+                else:
+                    for j in np.unique(sensors):
+                        IC_idx = 60 - j - 1
+                        IC[IC_idx] = PhotonQCNN.square_mapping(strings[np.where(sensors == j)])
+
+                sparse_IC = IC if xy_projection else [sp.sparse.coo_array(IC[i]) for i in range(60)]
+
+                if events["mc_truth", "initial_state_type", idx] == 14:
+                    np.savez_compressed(f"flattened_tracks/{event_file}_{idx}.npz", sparse_IC)
+                else:
+                    np.savez_compressed(f"flattened_cascades/{event_file}_{idx}.npz", sparse_IC)
+            break
+    
 
 # ============================================================
 #                  NEW DATA PREPARATION CLASS
