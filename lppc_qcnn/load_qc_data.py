@@ -23,6 +23,7 @@ import jax.numpy as jnp
 ## OTHER (JAX):
 from jax import lax # Dynamic splicing
 import scipy as sp # Photon events
+import os
 
 # ---------------------------------------------------------------
 ### *** TORCHVISION (FOR DATA):
@@ -199,9 +200,10 @@ class PhotonQCNN:
         
         return square_string.reshape((10, 10))
 
-    def make_tracks_cascades():
+    def make_tracks_cascades(path):
         # Insert path to your files here
-        fs = glob("/Users/pavelzhelnin/Downloads/photons/*.parquet")
+        fs = path
+        # fs = glob("/Users/pavelzhelnin/Downloads/photons/*.parquet")
         print(len(fs), "files")
         xy_projection = True
 
