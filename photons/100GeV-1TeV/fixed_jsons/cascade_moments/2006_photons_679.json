@@ -1,0 +1,10 @@
+{
+    "time_duration": 1031.519219,
+    "total_photons": 66,
+    "q1q3_com_distance": 16.0241176470588,
+    "moments_of_inertia": [
+        0.0,
+        65775.12150303047,
+        65775.12150303047
+    ]
+}

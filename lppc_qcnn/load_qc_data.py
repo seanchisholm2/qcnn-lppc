@@ -236,6 +236,10 @@ class PhotonQCNN:
                 else:
                     np.savez_compressed(f"flattened_cascades/{event_file}_{idx}.npz", sparse_IC)
             break
+
+    # ----------------------------------------------------
+    #          MOMENT OF INTERTIA FUNCTIONS (NEW)
+    # ----------------------------------------------------
     
 
 # ============================================================
