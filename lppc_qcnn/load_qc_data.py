@@ -54,6 +54,7 @@ from tqdm.notebook import tqdm
 ### *** OTHER ***:
 import awkward as ak
 from glob import glob
+import json
 
 ### ***** PACKAGE(S) *****:
 # ************************************************************************************
@@ -155,6 +156,7 @@ class PhotonQCNN:
     #             MATRIX GENERATOR FUNCTIONS (NEW)
     # ----------------------------------------------------
         
+    @staticmethod
     def deep_core_removal(event):
         """
         Deep core removal function.
@@ -162,6 +164,7 @@ class PhotonQCNN:
         mask = np.where(event["photons", "string_id"] < 79)
         return event["photons","string_id"][mask], event["photons","sensor_id"][mask]
     
+    @staticmethod
     def square_mapping(strings):
         """
         Square mapping function.
@@ -200,6 +203,7 @@ class PhotonQCNN:
         
         return square_string.reshape((10, 10))
 
+    @staticmethod
     def make_tracks_cascades(path):
         # Insert path to your files here
         fs = path
@@ -240,6 +244,57 @@ class PhotonQCNN:
     # ----------------------------------------------------
     #          MOMENT OF INTERTIA FUNCTIONS (NEW)
     # ----------------------------------------------------
+    
+    # ******* LOAD MOMENTS OF INERTIA FUNCTION *******:
+    @staticmethod
+    def load_moments_data_jax():
+        data_folder = "photons"
+        energy_bins = ["100GeV-1TeV", "1TeV-10TeV", "10TeV-100TeV", "100TeV-1PeV"]
+        photons_data = []
+
+        # Iterate through energy bin folders:
+        for energy_bin in energy_bins:
+            folder_path = os.path.join(data_folder, energy_bin)
+            energy_data = []
+
+            # Define tracks vs. cascades labels:
+            for subfolder in ["track_moments", "cascade_moments"]:
+                if subfolder == "track_moments":
+                    label = 0
+                elif subfolder == "cascade_moments":
+                    label = 1
+                
+                subfolder_path = os.path.join(folder_path, subfolder)
+                
+                # Process JSON files:
+                for file_name in os.listdir(subfolder_path):
+                    if file_name.endswith(".json"):
+                        file_path = os.path.join(subfolder_path, file_name)
+                        
+                        # Load JSON data
+                        with open(file_path, "r") as f:
+                            json_data = json.load(f)
+                        
+                        # Extract moments_of_inertia and assign label
+                        moments = json_data["moments_of_inertia"]  # Extract features
+                        data_entry = moments + [label]  # Add label
+                        energy_data.append(data_entry)
+
+            # Extract features and labels from moments_of_inertia data:
+            energy_data = jnp.array(energy_data)
+            features = energy_data[:, :-1]  # Extract features (moments_of_inertia)
+            labels = energy_data[:, -1]    # Extract labels
+
+            # Normalize features:
+            features_norm = features / jnp.linalg.norm(features, axis=1, keepdims=True)
+
+            # Combine normalized features with labels:
+            labels_reshaped = labels.reshape(-1, 1)  # Reshape labels for concatenation
+            energy_data_norm = jnp.concatenate((features_norm, labels_reshaped), axis=1)
+            photons_data.append(energy_data_norm)
+
+        combined_data = jnp.vstack(photons_data)
+        return combined_data
     
 
 # ============================================================
