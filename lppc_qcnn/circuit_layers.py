@@ -927,6 +927,15 @@ class TrainQC(LayersQC):
         colors = sns.color_palette()
         fig, axes = plt.subplots(ncols=2, figsize=(16.5, 5))
 
+        # Added to handle new colors in same color palette
+        new_color = None
+        if n_train == 2:
+            new_color = sns.color_palette()[0]
+        elif n_train == 5:
+            new_color = sns.color_palette()[1]
+        elif n_train == 10:
+            new_color = sns.color_palette()[2]
+
         generalization_errors = []
         # train_sizes = [2] # original
         train_sizes = [n_train] # new
