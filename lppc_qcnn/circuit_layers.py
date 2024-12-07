@@ -925,16 +925,10 @@ class TrainQC(LayersQC):
 
         sns.set_style('whitegrid')
         colors = sns.color_palette()
+        # colors = [sns.color_palette()[0]] # for n_train = 2
+        # colors = [sns.color_palette()[1]] # for n_train = 5
+        # colors = [sns.color_palette()[2]] # for n_train = 10
         fig, axes = plt.subplots(ncols=2, figsize=(16.5, 5))
-
-        # Added to handle new colors in same color palette
-        new_color = None
-        if n_train == 2:
-            new_color = sns.color_palette()[0]
-        elif n_train == 5:
-            new_color = sns.color_palette()[1]
-        elif n_train == 10:
-            new_color = sns.color_palette()[2]
 
         generalization_errors = []
         # train_sizes = [2] # original
