@@ -241,60 +241,94 @@ class PhotonQCNN:
                     np.savez_compressed(f"flattened_cascades/{event_file}_{idx}.npz", sparse_IC)
             break
 
-    # ----------------------------------------------------
-    #          MOMENT OF INTERTIA FUNCTIONS (NEW)
-    # ----------------------------------------------------
+class LoadPhotonData:
+    """
+    New class for loading and processing photon events data for quantum convolutional neural network.
+    """
+    # ***** IMPORT LoadPhotonData() CLASS *****:
+    # photon_data = LoadPhotonData()
     
-    # ******* LOAD MOMENTS OF INERTIA FUNCTION *******:
+    # ******* JAX PREPARING PHOTON EVENTS *******:
     @staticmethod
-    def load_moments_data_jax():
+    def prepare_moments_data_jax(energy_bin=None):
         data_folder = "photons"
         energy_bins = ["100GeV-1TeV", "1TeV-10TeV", "10TeV-100TeV", "100TeV-1PeV"]
-        photons_data = []
 
-        # Iterate through energy bin folders:
-        for energy_bin in energy_bins:
-            folder_path = os.path.join(data_folder, energy_bin)
-            energy_data = []
+        # Check energy bin argument:
+        if energy_bin not in energy_bins:
+            raise ValueError(f"Invalid energy_bin type. Must be one of {energy_bins}")
 
-            # Define tracks vs. cascades labels:
-            for subfolder in ["track_moments", "cascade_moments"]:
-                if subfolder == "track_moments":
-                    label = 0
-                elif subfolder == "cascade_moments":
-                    label = 1
-                
-                subfolder_path = os.path.join(folder_path, subfolder)
-                
-                # Process JSON files:
-                for file_name in os.listdir(subfolder_path):
-                    if file_name.endswith(".json"):
-                        file_path = os.path.join(subfolder_path, file_name)
-                        
-                        # Load JSON data
-                        with open(file_path, "r") as f:
-                            json_data = json.load(f)
-                        
-                        # Extract moments_of_inertia and assign label
-                        moments = json_data["moments_of_inertia"]  # Extract features
-                        data_entry = moments + [label]  # Add label
-                        energy_data.append(data_entry)
+        folder_path = os.path.join(data_folder, energy_bin)
+        features_list = []
+        labels_list = []
 
-            # Extract features and labels from moments_of_inertia data:
-            energy_data = jnp.array(energy_data)
-            features = energy_data[:, :-1]  # Extract features (moments_of_inertia)
-            labels = energy_data[:, -1]    # Extract labels
+        # Explicitly define labels:
+        for subfolder in ["track_moments", "cascade_moments"]:
+            if subfolder == "track_moments":
+                label = 0
+            elif subfolder == "cascade_moments":
+                label = 1
+            
+            subfolder_path = os.path.join(folder_path, subfolder)
+            
+            # Process JSON files in subfolders:
+            for file_name in os.listdir(subfolder_path):
+                if file_name.endswith(".json"):
+                    file_path = os.path.join(subfolder_path, file_name)
+                    
+                    # Load JSON data
+                    with open(file_path, "r") as f:
+                        json_data = json.load(f)
+                    
+                    # Extract moments_of_inertia and assign label
+                    moments = json_data["moments_of_inertia"]  # Extract features
+                    features_list.append(moments)
+                    labels_list.append(label)
 
-            # Normalize features:
-            features_norm = features / jnp.linalg.norm(features, axis=1, keepdims=True)
+        # Convert lists to JAX arrays:
+        features = jnp.array(features_list)
+        labels = jnp.array(labels_list)
 
-            # Combine normalized features with labels:
-            labels_reshaped = labels.reshape(-1, 1)  # Reshape labels for concatenation
-            energy_data_norm = jnp.concatenate((features_norm, labels_reshaped), axis=1)
-            photons_data.append(energy_data_norm)
+        # Normalize features:
+        features_norm = features / jnp.linalg.norm(features, axis=1, keepdims=True)
 
-        combined_data = jnp.vstack(photons_data)
-        return combined_data
+        return features_norm, labels
+    
+    # ******* JAX LOADING MOMENTS DATA (V1) *******:
+    def load_moments_jax_V1(n_train, n_test, features, labels):
+        """
+        Prepares training and testing data using JAX, compatible with the output 
+        of prepare_moments_data_jax.
+        """
+        # Total number of samples
+        n_total = labels.shape[0]
+
+        # Generate JAX RNG key
+        seed = np.random.randint(0, (2**32) - 1)
+        jax_rng = jax.random.PRNGKey(seed=seed)
+
+        # Shuffle indices
+        shuffled_indices = jax.random.permutation(jax_rng, n_total)
+
+        # Split indices for training and testing
+        train_indices = shuffled_indices[:n_train]
+        test_indices = shuffled_indices[n_train:n_train + n_test]
+
+        # Split data
+        x_train, y_train = features[train_indices], labels[train_indices]
+        x_test, y_test = features[test_indices], labels[test_indices]
+
+        return (
+            jnp.asarray(x_train),
+            jnp.asarray(y_train),
+            jnp.asarray(x_test),
+            jnp.asarray(y_test),
+        )
+    
+    @staticmethod
+    def load_moments_data_jax(n_train, n_test, features, labels):
+        # Current Version: *1*
+        return LoadPhotonData.load_moments_jax_V1(n_train, n_test, features, labels)
     
 
 # ============================================================
@@ -685,16 +719,6 @@ class LoadDataQC:
     def draw_mnist_data():
         # return LoadDataQC.draw_mnist_data_V2() # VERSION 1 (SAVES IMAGES)
         return LoadDataQC.draw_mnist_data_V1() # VERSION 1 (DISPLAYS IMAGES ONLY)
-
-    # ******* SAMPLE QC DATA (INOPERATIVE) *******:
-    @staticmethod
-    def sample_qcdata():
-        """
-        Generates sample data for QCNN.
-        """
-        # TO-DO: Implement this function
-
-        return None
 
 
 # ============================================================
