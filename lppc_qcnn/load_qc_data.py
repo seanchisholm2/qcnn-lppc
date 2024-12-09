@@ -258,7 +258,7 @@ class LoadPhotonData:
         if energy_bin not in energy_bins:
             raise ValueError(f"Invalid energy_bin type. Must be one of {energy_bins}")
 
-        folder_path = os.path.join(data_folder, energy_bin)
+        folder_path = os.path.join(data_folder, energy_bin, "fixed_jsons")
         features_list = []
         labels_list = []
 

@@ -38,6 +38,7 @@ seed = 0
 from .qc_operators import QuantumMathOps as qmath_ops # (STATIC METHOD)
 # *1* FROM LOAD_QC_DATA.PY:
 from .load_qc_data import LoadDataQC # (STATIC METHOD)
+from .load_qc_data import LoadPhotonData # (STATIC METHOD)
 # **********************************************************************************
 
 
@@ -791,29 +792,48 @@ class TrainQC(LayersQC):
     
     # ******* NEW TRAIN QCNN *******:
     @staticmethod
-    def train_qcnn(n_train, n_test, n_epochs):
+    def train_qcnn(n_train, n_test, n_epochs, use_moments):
         """
         Trains data for the QCNN model.
         """
-        # Prepare data (NumPy):
-        features_np, labels_np = LoadDataQC.prepare_data()
-        features = jnp.array(features_np) # NP -> JAX Arrays
-        labels = jnp.array(labels_np) # NP -> JAX Arrays
+
+        ## DATA PREPARATION:
+        # ------------------------------------------------------------------------------------------
+        if use_moments is True:
+            # bin_type = "100GeV-1TeV"
+            bin_type = "1TeV-10TeV"
+            # bin_type = "10TeV-100TeV"
+            # bin_type = "100TeV-1PeV"
+            features, labels = LoadPhotonData.prepare_moments_data_jax(energy_bin=bin_type)
+        else: 
+            # Prepare data (NumPy):
+            features_np, labels_np = LoadDataQC.prepare_data()
+            features = jnp.array(features_np) # NP -> JAX Arrays
+            labels = jnp.array(labels_np) # NP -> JAX Arrays
+        # ------------------------------------------------------------------------------------------
 
         ## JAX.JIT CONFIGURATION:
         # ------------------------------------------------------------------------------------------
         use_wrapped_version_train = False  # TRUE -> jax.jit-wrapped version, FALSE -> direct call
 
-        ## TRUE (JAX.JIT-WRAPPED):
-        if use_wrapped_version_train is True:
-            # Load data using wrapped function:
-            load_digits_data_jax_wrapped = jax.jit(LoadDataQC.load_digits_data_jax)
-            x_train, y_train, x_test, y_test = load_digits_data_jax_wrapped(
-                n_train, n_test, features, labels)
-        # FALSE (DIRECT CALL):
+        if use_moments is True:
+            # Use LoadPhotonData.load_moments_data_jax
+            x_train, y_train, x_test, y_test = LoadPhotonData.load_moments_data_jax(
+                n_train=n_train, n_test=n_test, features=features, labels=labels
+            )
         else:
-            x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data_jax(
-                n_train=n_train, n_test=n_test,features=features, labels=labels)
+            # TRUE (JAX.JIT-WRAPPED):
+            if use_wrapped_version_train is True:
+                # Load data using wrapped function:
+                load_digits_data_jax_wrapped = jax.jit(LoadDataQC.load_digits_data_jax)
+                x_train, y_train, x_test, y_test = load_digits_data_jax_wrapped(
+                    n_train, n_test, features, labels
+                )
+            # FALSE (DIRECT CALL):
+            else:
+                x_train, y_train, x_test, y_test = LoadDataQC.load_digits_data_jax(
+                    n_train=n_train, n_test=n_test, features=features, labels=labels
+                )
         # ------------------------------------------------------------------------------------------
 
         # Define lambda cost function
@@ -861,7 +881,7 @@ class TrainQC(LayersQC):
     # @jax.jit # (JIT-compiled use)
     # ******* RUN QCNN TRAINING ITERATIONS *******:
     @staticmethod
-    def run_iterations(n_train, n_test, n_epochs, n_reps):
+    def run_iterations(n_train, n_test, n_epochs, n_reps, use_moments):
         """
         Runs selected number of iterations of training loop for the QCNN model.
         """
@@ -873,7 +893,7 @@ class TrainQC(LayersQC):
         )
 
         for _ in range(n_reps):
-            results = TrainQC.train_qcnn(n_train, n_test, n_epochs)
+            results = TrainQC.train_qcnn(n_train, n_test, n_epochs, use_moments)
             results_df = pd.concat(
                 [results_df, pd.DataFrame.from_dict(results)], axis=0, ignore_index=True
             )
@@ -883,18 +903,19 @@ class TrainQC(LayersQC):
     # @jax.jit # (JIT-compiled use)
     # ******* COMPUTE AGGREGATED TRAINING RESULTS *******:
     @staticmethod
-    def compute_aggregated_results(n_train, n_test, n_epochs, n_reps):
+    def compute_aggregated_results(n_train, n_test, n_epochs, n_reps, use_moments=False):
         """
         Function to run training iterations for multiple sizes and aggregate the results.
         """
         # Run training for multiple sizes:
         # train_sizes = [2, 5, 10, 20, 40, 80]
         # Single-sized training:
-        train_sizes = [2]
-        results_df = TrainQC.run_iterations(n_train, n_test, n_epochs, n_reps)
+        # train_sizes = [2] # for MNIST data
+        train_sizes = [80] # for MOI data
+        results_df = TrainQC.run_iterations(n_train, n_test, n_epochs, n_reps, use_moments)
         for n_train in train_sizes[1:]:
             results_df = pd.concat([results_df, TrainQC.run_iterations(n_train, n_test,
-                                                                       n_epochs, n_reps)])
+                                                        n_epochs, n_reps, use_moments)])
         
         return results_df
     
