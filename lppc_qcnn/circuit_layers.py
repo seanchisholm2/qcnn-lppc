@@ -945,10 +945,10 @@ class TrainQC(LayersQC):
         df_agg = df_agg.reset_index()
 
         sns.set_style('whitegrid')
-        colors = sns.color_palette()
+        # colors = sns.color_palette()
         # colors = [sns.color_palette()[0]] # for n_train = 2
         # colors = [sns.color_palette()[1]] # for n_train = 5
-        # colors = [sns.color_palette()[2]] # for n_train = 10
+        colors = [sns.color_palette()[2]] # for n_train = 10
         fig, axes = plt.subplots(ncols=2, figsize=(16.5, 5))
 
         generalization_errors = []

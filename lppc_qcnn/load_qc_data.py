@@ -295,6 +295,7 @@ class LoadPhotonData:
         return features_norm, labels
     
     # ******* JAX LOADING MOMENTS DATA (V1) *******:
+    @staticmethod
     def load_moments_jax_V1(n_train, n_test, features, labels):
         """
         Prepares training and testing data using JAX, compatible with the output 
