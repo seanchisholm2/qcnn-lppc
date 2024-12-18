@@ -331,6 +331,108 @@ class LoadPhotonData:
         # Current Version: *1*
         return LoadPhotonData.load_moments_jax_V1(n_train, n_test, features, labels)
     
+    @staticmethod
+    def tracks_cascades_plot_data(energy_bin=None):
+        data_folder = "photons"
+        energy_bins = ["100GeV-1TeV", "1TeV-10TeV", "10TeV-100TeV", "100TeV-1PeV"]
+
+        # Check energy bin argument:
+        if energy_bin not in energy_bins:
+            raise ValueError(f"Invalid energy_bin type. Must be one of {energy_bins}")
+
+        folder_path = os.path.join(data_folder, energy_bin, "fixed_jsons")
+        moi_values_tracks = []
+        moi_values_cascades = []
+
+        # Explicitly define labels:
+        for subfolder in ["track_moments", "cascade_moments"]:
+            subfolder_path = os.path.join(folder_path, subfolder)
+            
+            # Process JSON files in subfolders:
+            for file_name in os.listdir(subfolder_path):
+                if file_name.endswith(".json"):
+                    file_path = os.path.join(subfolder_path, file_name)
+                    
+                    # Load JSON data
+                    with open(file_path, "r") as f:
+                        json_data = json.load(f)
+                    
+                    # Extract moments_of_inertia and assign label
+                    moments = json_data["moments_of_inertia"]  # Extract features
+                    if subfolder == "track_moments":
+                        moi_values_tracks.append(moments)
+                    elif subfolder == "cascade_moments":
+                        moi_values_cascades.append(moments)
+
+        moi_vals_tracks = jnp.array(moi_values_tracks)
+        moi_vals_cascades = jnp.array(moi_values_cascades)
+        
+        x_tracks = []
+        y_tracks = []
+        x_cascades = []
+        y_cascades = []
+
+        for tensor in moi_vals_tracks:
+            t_small = min(tensor)
+            t_large = max(tensor)
+            t_medium = sum(tensor) - t_small - t_large
+            # Split into x and y datasets:
+            t_1 = t_large - t_medium
+            t_2 = t_medium - t_small
+            # x_tracks.append(t_large)
+            # y_tracks.append(t_medium)
+            x_tracks.append(t_1)
+            y_tracks.append(t_2)
+        
+        for tensor in moi_vals_cascades:
+            c_small = min(tensor)
+            c_large = max(tensor)
+            c_medium = sum(tensor) - c_small - c_large
+            # Split into x and y datasets:
+            c_1 = c_large - c_medium
+            c_2 = c_medium - c_small
+            # x_cascades.append(c_large)
+            # y_cascades.append(c_medium)
+            x_cascades.append(c_1)
+            y_cascades.append(c_2)
+        
+        # Convert lists to numpy arrays:
+        x_tracks_arr = jnp.array(x_tracks)
+        y_tracks_arr = jnp.array(y_tracks)
+        x_cascades_arr = jnp.array(x_cascades)
+        y_cascades_arr = jnp.array(y_cascades)
+
+        # Normalize arrays:
+        x_tracks_norm = x_tracks_arr / jnp.linalg.norm(x_tracks_arr, keepdims=True)
+        y_tracks_norm = y_tracks_arr / jnp.linalg.norm(y_tracks_arr, keepdims=True)
+        x_cascades_norm = x_cascades_arr / jnp.linalg.norm(x_cascades_arr, keepdims=True)
+        y_cascades_norm = y_cascades_arr / jnp.linalg.norm(y_cascades_arr, keepdims=True)
+        
+        return x_tracks_norm, y_tracks_norm, x_cascades_norm, y_cascades_norm
+    
+    @staticmethod
+    def plot_tracks_cascades(x_tracks, y_tracks, x_cascades, y_cascades, energy_bin=None):
+        energy_bins = ["100GeV-1TeV", "1TeV-10TeV", "10TeV-100TeV", "100TeV-1PeV"]
+
+        # Check energy bin argument:
+        if energy_bin not in energy_bins:
+            raise ValueError(f"Invalid energy_bin type. Must be one of {energy_bins}")
+
+        plt.figure(figsize=(8, 6))
+
+        # Scatter plot for tracks and cascades
+        plt.plot(x_tracks, y_tracks, 'o', color='firebrick', alpha=0.9, label='Tracks')
+        plt.plot(x_cascades, y_cascades, 'o', color='forestgreen', alpha=0.9, label='Cascades')
+
+        # Add grid, labels, and title
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.title(f"Tracks vs. Cascades: {energy_bin}", fontsize=24)
+        plt.xlabel(r"$\tau_x$", fontsize=22)
+        plt.ylabel(r"$\tau_y$", fontsize=22)
+        plt.legend()
+
+        plt.show()
+
 
 # ============================================================
 #                  NEW DATA PREPARATION CLASS
