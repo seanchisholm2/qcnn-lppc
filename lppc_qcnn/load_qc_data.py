@@ -55,6 +55,7 @@ from tqdm.notebook import tqdm
 import awkward as ak
 from glob import glob
 import json
+from datetime import datetime # labeling images
 
 ### ***** PACKAGE(S) *****:
 # ************************************************************************************
@@ -411,7 +412,7 @@ class LoadPhotonData:
         return x_tracks_norm, y_tracks_norm, x_cascades_norm, y_cascades_norm
     
     @staticmethod
-    def plot_tracks_cascades(x_tracks, y_tracks, x_cascades, y_cascades, energy_bin=None):
+    def plot_tracks_cascades(x_tracks, y_tracks, x_cascades, y_cascades, energy_bin=None, save_fig=False):
         energy_bins = ["100GeV-1TeV", "1TeV-10TeV", "10TeV-100TeV", "100TeV-1PeV"]
 
         # Check energy bin argument:
@@ -430,6 +431,11 @@ class LoadPhotonData:
         plt.xlabel(r"$\tau_x$", fontsize=22)
         plt.ylabel(r"$\tau_y$", fontsize=22)
         plt.legend()
+
+        if save_fig is True:
+            current_date = datetime.now().strftime('%m-%d-%Y') # current date in format MM-DD-YYYY
+            save_path_results = f'qcnn-figures/tracks_cascades_{energy_bin}_{current_date}.png' # save path
+            plt.savefig(save_path_results, dpi=400, bbox_inches="tight") # high-res image
 
         plt.show()
 
