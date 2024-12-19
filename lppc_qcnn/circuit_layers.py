@@ -5,7 +5,8 @@
 ### *** PLOTTING ***:
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-mpl.rcParams['font.family'] = 'DejaVu Sans'
+
+plt.style.use('./qcnn-figures/chisholm-lppc.mplstyle')
 
 ### *** PENNYLANE ***:
 import pennylane as qml

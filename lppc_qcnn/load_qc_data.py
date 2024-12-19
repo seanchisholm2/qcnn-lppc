@@ -3,7 +3,10 @@
 #### ***** IMPORTS / DEPENDENCIES *****:
 
 ### *** PLOTTING ***:
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+plt.style.use('./qcnn-figures/chisholm-lppc.mplstyle')
 
 ### *** PENNYLANE ***:
 from pennylane import numpy as np
