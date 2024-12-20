@@ -29,13 +29,13 @@ import scipy as sp # Photon events
 import os
 
 # ---------------------------------------------------------------
-### *** TORCHVISION (FOR DATA):
+### *** TORCHVISION ***:
 import torch
-# from torchvision import datasets # (TorchVision not in env)
-# from torchvision import transforms # (TorchVision not in env)
+# from torchvision import datasets
+# from torchvision import transforms
 from torch.utils.data import DataLoader, TensorDataset
 
-### *** TENSORFLOW (FOR DATA) ***:
+### *** TENSORFLOW ***:
 # import tensorflow as tf
 # from tensorflow.keras.datasets import mnist
 # ---------------------------------------------------------------
@@ -64,7 +64,7 @@ from datetime import datetime # labeling images
 # ************************************************************************************
 # OPERATORS.PY:
 # from .qc_operators import QuantumMathOps as qmath_ops # QuantumMathOps()
-# from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO() # (NOT ACCESSED)
+# from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO()
 # Example Usage(s) (Instance Method):
 # -> QuantumMathOps():
 #       qmo_obj = qmath_ops

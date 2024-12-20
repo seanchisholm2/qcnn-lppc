@@ -16,21 +16,21 @@ import jax.experimental.sparse as jsp
 import jax.scipy.linalg as jsl
 
 # -------------------------------------------------
-### *** TORCHVISION (FOR OPERATORS) ***:
+### *** TORCHVISION ***:
 import torch 
 # from torchvision import datasets, transforms
 # from torch.utils.data import DataLoader
 
-### *** TENSORFLOW (FOR OPERATORS) ***:
+### *** TENSORFLOW ***:
 # import tensorflow as tf
 # from tensorflow.keras.datasets import mnist
 # -------------------------------------------------
 
 ### ***** PACKAGE(S) *****:
 # ************************************************************************************
-# OPERATORS.PY (SELF):
+# QC_OPERATORS.PY (SELF):
 # from .qc_operators import QuantumMathOps as qmath_ops # QuantumMathOps()
-# from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO() # (NOT ACCESSED)
+# from .qc_operators import PenguinsQMO as lppc_qmo # PenguinsQMO()
 # Example Usage(s) (Instance Method):
 # -> QuantumMathOps():
 #       qmo_obj = qmath_ops
@@ -52,15 +52,30 @@ class QuantumMathOps():
     qubit functions, and other related operations.
     """
     def __init__(self):
-        # QUBITS:
-        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
-        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
-        # ACTIVE QUBITS:
-        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits'
-        # WIRES:
-        self.wires = 6
-        self.n_wires = 6
-        self.num_wires = 2 # For drawings
+        ## QCNN CONFIGURATION
+        self.qubit_config = "mnist"
+        # self.qubit_config  "moi"
+
+        self.n_qubits_draw = 2 # 2 qubit config for 'DRAWQC'
+
+        if self.qubit_config == "mnist":
+            ## QUBITS:
+            self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration
+            ## ACTIVE QUBITS:
+            self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits'
+            ## WIRES:
+            self.wires = 6
+            self.n_wires = 6
+            self.num_wires = 6
+        elif self.qubit_config == "moi":
+            ## QUBITS:
+            self.n_qubits = 2
+            ## ACTIVE QUBITS:
+            self.active_qubits = 2
+            ## WIRES:
+            self.wires = 2
+            self.n_wires = 2
+            self.num_wires = 2
     
     # ----------------------------------------------------
     #        QUANTUM OPERATOR FUNCTIONS (ESSENTIAL)

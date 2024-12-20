@@ -35,9 +35,9 @@ seed = 0
 
 ### ***** PACKAGE(S) *****:
 # **********************************************************************************
-# *1* FROM OPERATORS.PY:
+# *1* FROM QC_OPERATORS.PY:
 from .qc_operators import QuantumMathOps as qmath_ops # (STATIC METHOD)
-# *1* FROM LOAD_QC_DATA.PY:
+# *2* FROM LOAD_QC_DATA.PY:
 from .load_qc_data import LoadDataQC # (STATIC METHOD)
 from .load_qc_data import LoadPhotonData # (STATIC METHOD)
 # **********************************************************************************
@@ -55,6 +55,7 @@ class LayersQC:
     """
     ## DEVICE
     # *1* Define number of wires for device (easier to switch between device types):
+    # device_wires = 2
     device_wires = 6
     # *2* Select device for class:
     device = qml.device('default.qubit.jax', wires=device_wires)
@@ -62,17 +63,33 @@ class LayersQC:
     # device = qml.device("default.mixed", wires=device_wires)
 
     def __init__(self):
+        ## QCNN CONFIGURATION
+        self.qubit_config = "mnist"
+        # self.qubit_config  "moi"
+
         ## CLASSES:
         self.qmo = qmath_ops
-        ## QUBITS:
-        self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration (for us, 6)
-        self.n_qubits_draw = 2 # 2 qubit config for DRAWQC
-        ## ACTIVE QUBITS:
-        self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits''
-        ## WIRES:
-        self.wires = 6
-        self.n_wires = 6
-        self.num_wires = 6
+        self.n_qubits_draw = 2 # 2 qubit config for 'DRAWQC'
+
+        if self.qubit_config == "mnist":
+            ## QUBITS:
+            self.n_qubits = 6 # Set 'n_qubits' equal to desired qubit configuration
+            ## ACTIVE QUBITS:
+            self.active_qubits = 6 # Set 'active_qubits' equal to 'n_qubits'
+            ## WIRES:
+            self.wires = 6
+            self.n_wires = 6
+            self.num_wires = 6
+        elif self.qubit_config == "moi":
+            ## QUBITS:
+            self.n_qubits = 2
+            ## ACTIVE QUBITS:
+            self.active_qubits = 2
+            ## WIRES:
+            self.wires = 2
+            self.n_wires = 2
+            self.num_wires = 2
+
 
     # ----------------------------------------------------
     #     CIRCUIT AND LAYER FUNCTIONS (NEW/ESSENTIAL)
@@ -260,14 +277,12 @@ class LayersQC:
         if barrier:
             qml.Barrier()
 
+    # HARD CODING
     # ******* CONVOLUTIONAL AND POOLING LAYER *******:
     def conv_and_pooling(self, kernel_weights, n_wires, skip_first_layer=True):
         """
         Applies both the convolutional and pooling layer.
         """
-        # Check Number of Wires ('n_wires'):
-        if n_wires is None:
-            wires = self.n_wires
 
         if skip_first_layer: 
             self.three_conv_layer(kernel_weights[15:78], n_wires, barrier=True)  
