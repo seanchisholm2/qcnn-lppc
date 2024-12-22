@@ -570,6 +570,12 @@ class LoadDataQC:
     #     DATA AND LOADING FUNCTIONS (NEW/ESSENTIAL)
     # ----------------------------------------------------
 
+    # ******* WEIGHTS SHAPE FUNCTION *******:
+    @staticmethod
+    def weights_shape(num_wires):
+        shape = int((num_wires // 2) * (3 ** 3))
+        return shape
+
     # ******* PREPARING QC DATASET *******:
     @staticmethod
     def prepare_data():

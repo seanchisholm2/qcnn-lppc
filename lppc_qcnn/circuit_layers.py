@@ -6,7 +6,7 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-plt.style.use('./qcnn-figures/chisholm-lppc.mplstyle')
+# plt.style.use('./qcnn-figures/chisholm-lppc.mplstyle')
 
 ### *** PENNYLANE ***:
 import pennylane as qml
