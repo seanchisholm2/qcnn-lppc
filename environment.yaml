@@ -5,7 +5,7 @@ channels:
 dependencies:
   - matplotlib=3.9.1
   - seaborn=0.13.2
-  - pennylane=0.37.0
+  - pennylane=0.39.0
   - numpy=1.26.4
   - jax=0.4.30
   - optax=0.2.3
