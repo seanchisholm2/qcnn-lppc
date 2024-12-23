@@ -53,10 +53,12 @@ class LayersQC:
     Contains all relevant circuit and layer functions for the quantum convolutional neural
     network (LPPC).
     """
-    ## DEVICE
+    ## DEVICE WIRES
     # *1* Define number of wires for device (easier to switch between device types):
     # device_wires = 2
     device_wires = 6
+
+    ## DEVICE SELECTION
     # *2* Select device for class:
     device = qml.device('default.qubit.jax', wires=device_wires)
     # device = qml.device("default.qubit", wires=device_wires)
@@ -89,7 +91,6 @@ class LayersQC:
             self.wires = 2
             self.n_wires = 2
             self.num_wires = 2
-
 
     # ----------------------------------------------------
     #     CIRCUIT AND LAYER FUNCTIONS (NEW/ESSENTIAL)
