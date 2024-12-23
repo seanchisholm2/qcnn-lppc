@@ -1,0 +1,85 @@
+name: new_qcnn_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Core scientific libraries:
+  - numpy>=1.26
+  - jax>=0.4
+  - torch>=2.2
+  - matplotlib>=3.9
+  - pennylane>=0.39  # Adjust to 0.37 broader compatibility
+  - seaborn>=0.13
+  - optax>=0.2
+  - pandas>=2.2
+  - scikit-learn>=1.5
+  - scipy>=1.14
+  - sympy>=1.13
+
+  # Other dependencies:
+  - awkward>=1.10
+  - tqdm>=4.65
+  - jupyter-lsp
+  - jupyter-server
+  - jupyter-server-terminals
+  - jupyterlab
+  - jupyterlab-execute-time
+  - jupyterlab-pygments
+  - jupyterlab-server
+  - appnope
+  - asttokens
+  - bzip2
+  - ca-certificates
+  - comm
+  - debugpy
+  - decorator
+  - exceptiongroup
+  - executing
+  - ipykernel
+  - ipython
+  - jedi
+  - jupyter_client
+  - jupyter_core
+  - libcxx
+  - libffi
+  - libsodium
+  - matplotlib-inline
+  - ncurses
+  - nest-asyncio
+  - openssl
+  - packaging
+  - parso
+  - pexpect
+  - pip
+  - platformdirs
+  - prompt-toolkit
+  - psutil
+  - ptyprocess
+  - pure_eval
+  - pygments
+  - python=3.11  # Adjust to 3.10 broader compatibility
+  - python-dateutil
+  - pyzmq
+  - readline
+  - setuptools
+  - six
+  - sqlite
+  - stack_data
+  - tk
+  - tornado
+  - traitlets
+  - typing_extensions
+  - wcwidth
+  - wheel
+  - xz
+  - zeromq
+  - zlib
+
+  # GPU support:
+  - cudatoolkit=11.8
+
+  # Other:
+  - nbextensions-configurator
+  - pytest  # For running unit tests
+  - ipdb  # For debugging in Python
+# prefix: /opt/anaconda3/envs/new_qcnn_env
