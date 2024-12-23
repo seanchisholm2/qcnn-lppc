@@ -8,7 +8,8 @@ dependencies:
   - jax>=0.4
   - torch>=2.2
   - matplotlib>=3.9
-  - pennylane>=0.39  # Adjust to 0.37 broader compatibility
+  - pennylane>=0.37  # Adjust to 0.39 for updated version
+  - pennylane-lightning>=0.37  # Adjust to 0.39 for updated version
   - seaborn>=0.13
   - optax>=0.2
   - pandas>=2.2
@@ -22,6 +23,8 @@ dependencies:
   - jupyter-lsp
   - jupyter-server
   - jupyter-server-terminals
+  - jupyter_client
+  - jupyter_core
   - jupyterlab
   - jupyterlab-execute-time
   - jupyterlab-pygments
@@ -38,8 +41,6 @@ dependencies:
   - ipykernel
   - ipython
   - jedi
-  - jupyter_client
-  - jupyter_core
   - libcxx
   - libffi
   - libsodium
@@ -57,7 +58,7 @@ dependencies:
   - ptyprocess
   - pure_eval
   - pygments
-  - python=3.11  # Adjust to 3.10 broader compatibility
+  - python=3.11  # Adjust to 3.10 for broader compatibility
   - python-dateutil
   - pyzmq
   - readline
@@ -82,4 +83,40 @@ dependencies:
   - nbextensions-configurator
   - pytest  # For running unit tests
   - ipdb  # For debugging in Python
-# prefix: /opt/anaconda3/envs/new_qcnn_env
+  - nbclient
+  - nbconvert
+  - nbformat
+  - notebook-shim
+  - networkx
+  - opt-einsum
+  - pandocfilters
+  - pillow
+  - prometheus-client
+  - pyarrow
+  - pyarrow-hotfix
+  - overrides
+  - python-json-logger
+  - referencing
+  - rfc3339-validator
+  - rfc3986-validator
+  - rpds-py
+  - rustworkx
+  - semantic-version
+  - send2trash
+  - sniffio
+  - soupsieve
+  - threadpoolctl
+  - tinycss2
+  - toml
+  - tomli
+  - toolz
+  - types-python-dateutil
+  - tzdata
+  - uri-template
+  - urllib3
+  - webcolors
+  - webencodings
+  - websocket-client
+  - zope-interface
+
+prefix: /opt/anaconda3/envs/new_qcnn_env
