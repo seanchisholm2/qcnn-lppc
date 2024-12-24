@@ -6,10 +6,11 @@ dependencies:
   # Core scientific libraries:
   - numpy>=1.26
   - jax>=0.4
-  - torch>=2.2
+  # - torch=2.2.2
+  - pytorch>=2.2.2
   - matplotlib>=3.9
   - pennylane>=0.37  # Adjust to 0.39 for updated version
-  - pennylane-lightning>=0.37  # Adjust to 0.39 for updated version
+  - pennylane-lightning=0.24.0  # Adjust to 0.39 for updated version
   - seaborn>=0.13
   - optax>=0.2
   - pandas>=2.2
@@ -18,17 +19,19 @@ dependencies:
   - sympy>=1.13
 
   # Other dependencies:
+  - jupyter_server>=2.14.2
+  - jupyterlab_server=2.27.3
+  - jupyter_server_terminals=0.5.3
+  - jupyterlab_execute_time>=3.1.2
+  - jupyterlab_pygments=0.3.0
+  - prometheus_client>=0.20.0
+  - semantic_version=2.10.0
   - awkward>=1.10
   - tqdm>=4.65
   - jupyter-lsp
-  - jupyter-server
-  - jupyter-server-terminals
   - jupyter_client
   - jupyter_core
   - jupyterlab
-  - jupyterlab-execute-time
-  - jupyterlab-pygments
-  - jupyterlab-server
   - appnope
   - asttokens
   - bzip2
@@ -76,11 +79,7 @@ dependencies:
   - zeromq
   - zlib
 
-  # GPU support:
-  - cudatoolkit=11.8
-
   # Other:
-  - nbextensions-configurator
   - pytest  # For running unit tests
   - ipdb  # For debugging in Python
   - nbclient
@@ -91,7 +90,6 @@ dependencies:
   - opt-einsum
   - pandocfilters
   - pillow
-  - prometheus-client
   - pyarrow
   - pyarrow-hotfix
   - overrides
@@ -101,7 +99,6 @@ dependencies:
   - rfc3986-validator
   - rpds-py
   - rustworkx
-  - semantic-version
   - send2trash
   - sniffio
   - soupsieve
@@ -117,6 +114,5 @@ dependencies:
   - webcolors
   - webencodings
   - websocket-client
-  - zope-interface
-
+  - zope.interface>=7.0.1
 prefix: /opt/anaconda3/envs/new_qcnn_env
